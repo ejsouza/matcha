@@ -1,0 +1,52 @@
+body {
+  margin: 0;
+  overflow-x: hidden !important; /* Be careful - Blocks scroll in the x position - to fix react card effect */
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+
+#arrow:hover {
+  fill: red;
+}
+
+
+#Vector_2:hover {
+  animation: crossVector 1s ease;
+  transform-origin: center;
+}
+
+#Vector:not(:hover) {
+  animation: crossVectorBack .5s ease;
+  transform-origin: center;
+}
+
+@keyframes crossVector {
+  from {
+    -webkit-transform: rotate(0deg);
+    transform: rotate(0deg);
+  }
+  to {
+    -webkit-transform: rotate(0deg);
+    transform: rotate(-90deg);
+  }
+}
+
+@keyframes crossVectorBack {
+  from {
+    -webkit-transform: rotate(0deg);
+    transform: rotate(0deg);
+  }
+  to {
+    -webkit-transform: rotate(0deg);
+    transform: rotate(90deg);
+  }
+}

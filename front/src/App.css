@@ -1,0 +1,218 @@
+.flex-box {
+  display: flex;
+}
+
+.link-hover-red {
+  color: #252932;
+}
+
+.link-hover-red:hover {
+  color: red;
+}
+
+#arrow:hover {
+  fill: red;
+}
+
+#settings:hover {
+  fill: red;
+}
+
+#info:hover {
+  fill: red;
+}
+
+
+/* Remove Cross on delete picture */
+/* #mainCrossIcon:hover {
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  animation: closerotation 2s infinite linear;
+}
+@keyframes closerotation {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(45deg);
+  }
+} */
+
+#mapid {
+  height: 180px;
+}
+
+.leaflet-container {
+  width: 100%;
+  height: 80vh;
+}
+
+.account-setting {
+  color: #868e96;
+  padding: 3vh 1vh;
+}
+
+.account-setting h6 {
+  font-size: 12px;
+}
+
+.text-end {
+  cursor: pointer;
+}
+
+.update-link {
+  color: #868e96;
+}
+
+.update-link:hover {
+  color: red;
+}
+
+.gray-one {
+  color: #868e96;
+}
+
+
+.theme-background-on-hover:hover {
+  background-image: linear-gradient(to right, #fd297b, #ff655b);
+}
+
+.text-success-styled {
+  color: #28a745;
+  text-align: center;
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.modal-background-dark {
+  background: #252932;
+}
+
+.modal-background-white {
+  background: #fff;
+}
+
+/* Deck */
+
+#root-deck {
+  /* background: lightblue; */
+  position: fixed;
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+  /* cursor: url('https://uploads.codesandbox.io/uploads/user/b3e56831-8b98-4fee-b941-0e27f39883ab/Ad1_-cursor.png') 39 39, auto; */
+}
+
+#root-deck > div {
+  position: absolute;
+  width: 73.5vw;
+  height: 100vh;
+  will-change: transform;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#root-deck > div > div {
+  background-color: white;
+  background-size: auto 100%;
+  background-repeat: no-repeat;
+  background-position: center center;
+  width: 45vw;
+  max-width: 380px;
+  height: 85vh;
+  max-height: 650px;
+  object-fit: contain;
+  will-change: transform;
+  border-radius: 10px;
+  box-shadow: inset 0.5em -6em 1.5em black;
+}
+
+
+.card-buttons {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 16px;
+
+}
+/* Start animate like button on hover */
+
+#like-button {
+  margin-top: 500px;
+}
+
+#heart-vector:hover {
+  transform: scale(1.2);
+}
+
+#heart-vector {
+  transition: all 1s;
+  transform-origin: 50% 50%;
+}
+
+
+/* End animate like button on hover */
+
+/* Start animate dislike button on hover */
+#cross-vector:hover {
+  transform: scale(1.2);
+}
+
+#cross-vector {
+  transition: all 1s;
+  transform-origin: 50% 50%;
+}
+
+#circle-vector {
+  transition: all 1s;
+  transform-origin: 50% 50%;
+}
+/* End animate dislike button on hover */
+
+/* Start Carousel */
+.is-active {
+  color: #fd297b;
+  text-decoration: underline;
+}
+
+/* End Carousel */
+
+/* Start file upload */
+.file {
+  opacity: 0;
+  width: 0.1px;
+  height: 0.1px;
+  position: absolute;
+}
+
+.file-input label {
+  display: block;
+  position: relative;
+  width: 100%;
+  height: 40px;
+  border: none;
+  border-radius: 25px;
+  background: linear-gradient(to right, #fd297b, #ff655b);
+  box-shadow: 0 4px 7px rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: bold;
+  cursor: pointer;
+  transition: transform .2s ease-out;
+}
+
+input:hover + label,
+input:focus + label {
+  transform: scale(1.02);
+}
+
+input:focus + label {
+  outline: 1px solid #000;
+  outline: -webkit-focus-ring-color auto 2px;
+}
+
+/* End file upload */
