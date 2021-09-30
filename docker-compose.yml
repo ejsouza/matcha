@@ -3,6 +3,8 @@ version: "3.3"
 services:
   api:
     container_name: api
+    depends_on:
+      - postgres
     restart: unless-stopped
     # env_file: ./server/.env
     build:
@@ -28,13 +30,18 @@ services:
     image: postgres:10.5
     restart: unless-stopped
     volumes:
-      - ./postgres-data:/var/lib/postgresql/data
+      - ./api/postgres-data:/var/lib/postgresql/data
       # copy the sql script to create tables
-      - ./sql/create_tables.sql:/docker-entrypoint-initdb.d/create_tables.sql
+      # - ./sql/create_tables.sql:/docker-entrypoint-initdb.d/create_tables.sql
+      - ./src/migrations/dbinit.sql:/docker-entrypoint-initdb.d/dbinit.sql
     ports:
-      - '5438:5432'
+      - '5432:5432'
     networks:
       - matcha-network
+    environment:
+      POSTGRES_USER: matcha
+      POSTGRES_PASSWORD: matcha
+      POSTGRES_DB: matcha
 
 networks:
   matcha-network:
