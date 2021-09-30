@@ -1,0 +1,41 @@
+version: "3.3"
+
+services:
+  api:
+    container_name: api
+    restart: unless-stopped
+    # env_file: ./server/.env
+    build:
+      context: ./api/
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    networks:
+      - matcha-network
+    volumes:
+      - ./:/api
+
+  front:
+    container_name: front
+    build:
+      context: ./front/
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+  
+  postgres:
+    container_name: postgres
+    image: postgres:10.5
+    restart: unless-stopped
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
+      # copy the sql script to create tables
+      - ./sql/create_tables.sql:/docker-entrypoint-initdb.d/create_tables.sql
+    ports:
+      - '5438:5432'
+    networks:
+      - matcha-network
+
+networks:
+  matcha-network:
+    driver: bridge
