@@ -1,16 +1,22 @@
 # syntax=docker/dockerfile:1
 
-FROM node:15-alpine3.10
+FROM node:16-alpine3.11
 
-ENV NODE_ENV=production
+#ENV NODE_ENV=production
 
 WORKDIR /app
 
 COPY ["package.json", "package-lock.json*", "./"]
 
-RUN npm install --production
+RUN npm ci
 
 COPY . .
+
+# RUN npm install -g typescript
+
+# RUN tsc
+
+RUN npm run build
 
 EXPOSE 8000
 
