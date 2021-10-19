@@ -12,10 +12,17 @@ class UserRepository {
   }
 
   async addUser(user: CreateUserDto) {
-    const { username, first_name, last_name, email, password } = user;
+    const { username, firstname, lastname, email, password } = user;
     const query =
-      'INSERT INTO users(username, first_name, last_name, email, password) VALUES($1, $2, $3, $4, $5)';
-    return db.query(query, [username, first_name, last_name, email, password]);
+      'INSERT INTO users(username, firstname, lastname, email, password, sexual_orientation) VALUES($1, $2, $3, $4, $5, $6) RETURNING *';
+    return db.query(query, [
+      username,
+      firstname,
+      lastname,
+      email,
+      password,
+      'bisexual',
+    ]);
   }
 
   async getUsers() {
@@ -23,10 +30,79 @@ class UserRepository {
     return db.query(query, []);
   }
 
-  async getUserById(userId: string) {}
+  async getUserById(userId: string) {
+    const query = 'SELECT * FROM users WHERE id = $1';
+    return db.query(query, [userId]);
+  }
+
+  async getUserByEmail(email: string) {
+    const query = 'SELECT * FROM users WHERE email = $1';
+    return db.query(query, [email]);
+  }
+
+  async getUserByUsername(username: string) {
+    const query = `SELECT * FROM users WHERE username = $1`;
+    return db.query(query, [username]);
+  }
+
+  async getUserWithoutPassword(username: string) {
+    const query = `SELECT 
+      u.id,
+      u.username,
+      u.firstname,
+      u.lastname,
+      u.email,
+      u.gender,
+      u.birthdate,
+      u.sexual_orientation,
+      u.biography,
+      u.localisation,
+      u.activated,
+      u.created_at,
+      u.updated_at
+      FROM users u
+      WHERE username = $1
+    `;
+
+    return db.query(query, [username]);
+  }
 
   async patchUser(userId: string, user: PatchUserDto) {
-    return `${user.id} patched`;
+    let prepare = ['UPDATE users'];
+    prepare.push('SET');
+    let set: string[];
+    set = [];
+    Object.keys(user).forEach((key, i) => {
+      if (key !== 'id') {
+        set.push(`${key} = ($${i + 1})`);
+      }
+    });
+    prepare.push(set.join(', '));
+    prepare.push(`WHERE id = ${userId} RETURNING *`);
+
+    const values = Object.values(user).map((value) => value);
+    /**
+     * [Remove id from from array]
+     * We always add the user id to the body in:
+     * users.routes.confi.ts
+     * this way we have access to it anywhere in the app
+     * if the ressources requires user id.
+     */
+    values.pop();
+    const query = prepare.join(' ');
+    return db.query(query, values);
+  }
+
+  async patchUserCoordinates(userId: string, coordinates: PatchUserDto) {
+    const query = `UPDATE users SET localisation=POINT($1, $2) WHERE id=${userId} RETURNING *`;
+
+    console.log(`userRepository patchUserCoordinates(${coordinates.localisation?.x}, ${coordinates.localisation?.y})`);
+    const values = [
+      coordinates.localisation?.x,
+      coordinates.localisation?.y,
+    ];
+
+    return db.query(query, values);
   }
 
   async deleteUser(userId: string) {
