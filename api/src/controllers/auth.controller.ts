@@ -8,14 +8,11 @@ const log: debug.IDebugger = debug('app:auth-controller');
 
 class AuthController {
   async createJWT(req: express.Request, res: express.Response) {
-    // const SECRET = process.env.JWT_SECRET;
     try {
       const user = await usersService.getUserWithoutPassword(req.body.username);
       const token = jwt.sign({ userId: user.id }, SECRET_TOKEN, {
         expiresIn: EXPIRES_IN,
       });
-      console.log(`DO WE HAVE THE ID HERE ? ${req.body.userId}`);
-
       return res.status(201).send({ user, token });
     } catch (err) {
       log('createJWT error: %O', err);
