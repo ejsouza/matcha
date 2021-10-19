@@ -6,7 +6,7 @@ const log: debug.IDebugger = debug('app:User-repository');
 class PhotoRepository {
   async upload(userId: number, path: string) {
     const query = 'INSERT INTO pictures(user_id, file_path) VALUES($1, $2)';
-    db.query(query, [userId, path]);
+    return db.query(query, [userId, path]);
   }
 
   async list(userId: number) {
