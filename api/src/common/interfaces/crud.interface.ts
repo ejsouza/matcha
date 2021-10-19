@@ -3,6 +3,6 @@ export interface CRUD {
   create: (resource: any) => Promise<any>;
   // putById: (id: string, resource: any) => Promise<string>;
   getById: (id: string) => Promise<any>;
-  deleteUser: (id: string) => Promise<string>;
-  patchById: (id: string, resource: any) => Promise<string>;
+  // deleteUser: (id: string) => Promise<string>;
+  patchById: (id: string, resource: any) => Promise<any>;
 }
