@@ -1,10 +1,9 @@
-export interface CreateUserDto {
+export interface PublicUserDto {
   id: number;
   username: string;
   firstname: string;
   lastname: string;
   email: string;
-  password: string;
   gender?: string;
   sexual_orientation?: string;
   biography?: string;
@@ -16,5 +15,3 @@ export interface CreateUserDto {
   created_at?: Date;
   updated_at?: Date;
 }
-
-export const MapUserDto = (user: CreateUserDto) => {};
