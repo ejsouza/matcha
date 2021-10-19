@@ -27,41 +27,44 @@ class AuthMiddleware {
     });
   }
 
-  async validJWTNeeded(
-    req: express.Request,
-    res: express.Response,
-    next: express.NextFunction
-  ) {
-    if (req.headers['authorization']) {
-      try {
-        const authorization = req.headers['authorization'].split(' ');
-        if (authorization[0] !== 'Bearer') {
-          return res.status(401).send({ error: 'Bearer type missing' });
-        } else {
-          /**
-           * If jwt.verify() fails control flows to the catch() bellow
-           * and 401 is returned
-           */
-          jwt.verify(authorization[1], SECRET_TOKEN);
+  // async validJWTNeeded(
+  //   req: express.Request,
+  //   res: express.Response,
+  //   next: express.NextFunction
+  // ) {
+  //   if (req.headers['authorization']) {
+  //     try {
+  //       const authorization = req.headers['authorization'].split(' ');
+  //       if (authorization[0] !== 'Bearer') {
+  //         return res.status(401).send({ error: 'Bearer type missing' });
+  //       } else {
+  //         /**
+  //          * If jwt.verify() fails control flows to the catch() bellow
+  //          * and 401 is returned
+  //          */
+  //         jwt.verify(authorization[1], SECRET_TOKEN);
 
-          const decoded = jwt.decode(authorization[1]);
-          const userId = (decoded as any).userId;
-          /**
-           *  Verify if user id matches user id in token
-           */
+  //         const decoded = jwt.decode(authorization[1]);
+  //         const userId = (decoded as any).userId;
+  //         /**
+  //          *  Verify if user id matches user id in token
+  //          */
 
-          if (Number(userId) !== Number(req.body.id)) {
-            return res.status(401).send();
-          }
-          next();
-        }
-      } catch (err) {
-        return res.status(403).send();
-      }
-    } else {
-      return res.status(401).send({ error: 'Missing authorization token' });
-    }
-  }
+  //         if (Number(userId) !== Number(req.body.id)) {
+  //           return res.status(401).send();
+  //         }
+  //         /**
+  //          * Valid token call next()
+  //          */
+  //         next();
+  //       }
+  //     } catch (err) {
+  //       return res.status(403).send();
+  //     }
+  //   } else {
+  //     return res.status(401).send({ error: 'Missing authorization token' });
+  //   }
+  // }
 }
 
 export default new AuthMiddleware();

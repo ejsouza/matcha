@@ -107,6 +107,21 @@ class UserMiddleware {
     }
   }
 
+  async validateUserIdIsInBody(
+    req: express.Request,
+    res: express.Response,
+    next: express.NextFunction
+  ) {
+    const user = await userService.getById(req.body.userId);
+    if (user) {
+      next();
+    } else {
+      res.status(404).send({
+        error: `User not found`,
+      });
+    }
+  }
+
   async extractUserId(
     req: express.Request,
     res: express.Response,
