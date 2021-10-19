@@ -2,7 +2,7 @@ import express from 'express';
 import { CommonRoutesConfig } from '../common/common.routes.config';
 import photoController from '../controllers/photos.controller';
 import photoMiddleware from '../middleware/photos.middleware';
-import authMiddleware from '../middleware/auth.middleware';
+import tokenMiddleware from '../middleware/token.middleware';
 import multer from 'multer';
 import photosController from '../controllers/photos.controller';
 
@@ -49,9 +49,9 @@ export class PhotoRoutes extends CommonRoutesConfig {
   configureRoutes() {
     this.app
       .route(`/photos`)
-      .get(photoMiddleware.validJWTNeeded, photoController.listUserPhotos)
+      .get(tokenMiddleware.containValidJWT, photoController.listUserPhotos)
       .post(
-        photoMiddleware.validJWTNeeded,
+        tokenMiddleware.containValidJWT,
         upload.single('uploaded_file'),
         photoMiddleware.photoMimetype,
         photoController.upload
@@ -59,8 +59,8 @@ export class PhotoRoutes extends CommonRoutesConfig {
 
     this.app
       .route(`/photos/:id`)
-      .get(photoMiddleware.validJWTNeeded, photosController.getById)
-      .delete(photoMiddleware.validJWTNeeded, photosController.delete);
+      .get(tokenMiddleware.containValidJWT, photosController.getById)
+      .delete(tokenMiddleware.containValidJWT, photosController.delete);
 
     return this.app;
   }

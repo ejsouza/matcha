@@ -1,5 +1,9 @@
 import express from 'express';
 import { CommonRoutesConfig } from '../common/common.routes.config';
+import tagController from '../controllers/tags.controller';
+import usersMiddleware from '../middleware/users.middleware';
+import authMiddleware from '../middleware/auth.middleware';
+import tokenMiddleware from '../middleware/token.middleware';
 
 export class TagRoutes extends CommonRoutesConfig {
   constructor(app: express.Application) {
@@ -9,10 +13,22 @@ export class TagRoutes extends CommonRoutesConfig {
   configureRoutes() {
     this.app
       .route('/tags')
-      .get((req: express.Request, res: express.Response) => {
-        res.status(200).json({ tags: 'returning from get tags' });
-      });
+      .all(
+        usersMiddleware.validateUserIdIsInBody,
+        tokenMiddleware.containValidJWT
+      )
+      .get(tagController.list)
+      .post(tagController.create);
 
+    this.app
+      .route('/tags/:userId')
+      .all(usersMiddleware.validateUserExists, tokenMiddleware.containValidJWT)
+      .get(tagController.getUserTags)
+      .delete(tagController.delete);
+    this.app
+      .route('/tags/:userId/all')
+      .all(usersMiddleware.validateUserExists, tokenMiddleware.containValidJWT)
+      .get(tagController.list);
     return this.app;
   }
 }

@@ -1,44 +1,46 @@
-import { CommonRoutesConfig } from '../common/common.routes.config';
-import usersController from '../controllers/users.controller';
 import express from 'express';
+import { CommonRoutesConfig } from '../common/common.routes.config';
+import userController from '../controllers/users.controller';
+import userMiddleware from '../middleware/users.middleware';
+import tokenMiddleware from '../middleware/token.middleware';
 
-export class UsersRoutes extends CommonRoutesConfig {
+export class UserRoutes extends CommonRoutesConfig {
   constructor(app: express.Application) {
-    super(app, 'UsersRoutes');
+    super(app, 'UserRoutes');
   }
 
   configureRoutes() {
     this.app
       .route(`/users`)
-      .get(usersController.listUsers)
-      .post(usersController.createUser);
+      .get(userController.listUsers)
+      .post(
+        userMiddleware.validateRequiredUserBodyFields,
+        userMiddleware.validateSameEmailDoesntExist,
+        userMiddleware.validateSameUsernameDoesntExist,
+        userController.createUser
+      );
+
+    this.app.param(`userId`, userMiddleware.extractUserId);
 
     this.app
       .route(`/users/:userId`)
-      .all(
-        (
-          req: express.Request,
-          res: express.Response,
-          next: express.NextFunction
-        ) => {
-          // this middleware function runs before any request to /users/:userId
-          // but it doesn't accomplish anything just yet---
-          // it simply passes control to the next applicable function below using next()
-          next();
-        }
-      )
-      .get((req: express.Request, res: express.Response) => {
-        res.status(200).send(`GET request for id ${req.params.userId}`);
-      })
+      .all(userMiddleware.validateUserExists)
+      .get(userController.getUserById)
       .put((req: express.Request, res: express.Response) => {
         res.status(200).send(`PUT request for id ${req.params.userId}`);
       })
-      .patch((req: express.Request, res: express.Response) => {
-        res.status(200).send(`PATCH request for id ${req.params.userId}`);
-      })
+      .patch(tokenMiddleware.validJWTNeeded, userController.patchUser)
       .delete((req: express.Request, res: express.Response) => {
         res.status(200).send(`DELETE request for id ${req.params.userId}`);
       });
+
+    this.app
+      .route(`/users/:userId/coordinates`)
+      .all(userMiddleware.validateUserExists)
+      .patch(
+        tokenMiddleware.validJWTNeeded,
+        userController.patchUserCoordinates
+      );
     return this.app;
   }
 }
