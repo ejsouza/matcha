@@ -8,6 +8,7 @@ import { CommonRoutesConfig } from './common/common.routes.config';
 import { UserRoutes } from './routes/users.routes.config';
 import { AuthRoutes } from './routes/auth.routes.config';
 import { PhotoRoutes } from './routes/photos.routes.config';
+import { TagRoutes } from './routes/tags.routes.config';
 import debug from 'debug';
 import db from '../db/';
 
@@ -55,6 +56,7 @@ app.use(expressWinston.logger(loggerOptions));
 routes.push(new UserRoutes(app));
 routes.push(new AuthRoutes(app));
 routes.push(new PhotoRoutes(app));
+routes.push(new TagRoutes(app));
 
 // this is a simple route to make sure everything is working properly
 const runningMessage = `Server running at http://localhost:${PORT}`;
