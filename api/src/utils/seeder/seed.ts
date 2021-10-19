@@ -1,0 +1,107 @@
+import db from '../../../db/index';
+import faker from 'faker';
+import bcrypt from 'bcrypt';
+import { SALT_ROUNDS } from '../../../src/config/const';
+import { setLocation } from '../../../src/utils/seeder/fake_location';
+
+interface FakeFaceResponse {
+  age: number;
+  date_added: Date;
+  filename: string;
+  gender: string;
+  image_url: string;
+  last_served: Date;
+  source: string;
+}
+
+const getFakeFaceImage = async (gender: string) => {
+  const res = await fetch(
+    `https://fakeface.rest/face/json?gender=${gender}&minimum_age=18&maximum_age=30`
+  );
+  const data: FakeFaceResponse = await res.json();
+  return data.image_url;
+};
+
+const createUserAccount = async () => {
+  for (let i = 0; i < 100; i++) {
+    const genders = ['male', 'female'];
+    const sexuality = ['straight', 'gay', 'bisexual'];
+    let coordinates = {
+      x: 0,
+      y: 0,
+    };
+    if (i <= 150) {
+      coordinates = setLocation(
+        47.21400394584991,
+        47.255665492438254,
+        -1.5523838481265795,
+        -1.5843600124770751
+      ); // Nantes area coordinates
+    } else if (i <= 300) {
+      coordinates = setLocation(
+        45.74030656088014,
+        45.77461914951937,
+        4.844878073170973,
+        4.883473249455159
+      ); // Lyon area coordinates
+    } else {
+      coordinates = setLocation(
+        48.82985637372646,
+        48.89373720829586,
+        2.2851965731168455,
+        2.3904911392024575
+      ); // Paris area coordinates
+    }
+
+    const created_at = faker.date.past(
+      Math.floor(Math.random() * (30 - 5) + 5)
+    );
+    const birthdate = faker.date.between('1980-01-01', '2002-12-31');
+    const updated_at = faker.date.between(created_at, new Date());
+    const gender = faker.random.arrayElement(genders); //7
+    const firstname = faker.name.firstName(genders.indexOf(gender)); //2
+    const lastname = faker.name.lastName(); //3
+    const username = faker.internet.userName(firstname); //1
+    const email = faker.internet.email(`${firstname} ${lastname}`); //4
+    const biography = faker.lorem.sentence(6); //8
+    const clearPassword = faker.internet.password(); //x
+    const password = await bcrypt.hash(clearPassword, SALT_ROUNDS); //5
+    const sexual_orientation = faker.random.arrayElement(sexuality); //6
+    const activated = true; //9
+
+    const query = `INSERT INTO users(
+			username,
+			firstname,
+			lastname,
+			email,
+			password,
+			sexual_orientation,
+			gender,
+			biography,
+			activated,
+			localisation,
+			created_at,
+			birthdate
+			)
+			VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, POINT($10, $11), $12, $13)`;
+
+    await db.query(query, [
+      username,
+      firstname,
+      lastname,
+      email,
+      password,
+      sexual_orientation,
+      gender,
+      biography,
+      activated,
+      coordinates.x,
+      coordinates.y,
+      created_at,
+      birthdate,
+    ]);
+    console.log(`created user ${i}...`);
+  }
+};
+
+createUserAccount();
