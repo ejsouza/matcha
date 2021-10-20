@@ -1,8 +1,16 @@
 import db from '../../../db/index';
 import faker from 'faker';
 import bcrypt from 'bcrypt';
-import { SALT_ROUNDS } from '../../../src/config/const';
-import { setLocation } from '../../../src/utils/seeder/fake_location';
+import tagService from '../../services/tags.service';
+import { CreateTagDto } from '../../dto/tags/create.tag.dto';
+import { SALT_ROUNDS } from '../../config/const';
+import { setLocation } from '../../utils/seeder/fake_location';
+import baseTags from '../../config/base.tags';
+import https from 'https';
+import { CreateUserDto } from '../../dto/users/create.user.dto';
+import usersService from '../../services/users.service';
+
+faker.locale = 'fr';
 
 interface FakeFaceResponse {
   age: number;
@@ -14,16 +22,32 @@ interface FakeFaceResponse {
   source: string;
 }
 
-const getFakeFaceImage = async (gender: string) => {
-  const res = await fetch(
-    `https://fakeface.rest/face/json?gender=${gender}&minimum_age=18&maximum_age=30`
-  );
-  const data: FakeFaceResponse = await res.json();
-  return data.image_url;
+const randTags = async (userId: number) => {
+  const base = [
+    1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
+    22, 23, 24, 25, 26, 27, 28, 29, 30,
+  ];
+
+  let random: number[] = [];
+
+  while (random.length < 3) {
+    random.push(base.splice(Math.floor(Math.random() * base.length), 1)[0]);
+  }
+
+  for (let x = 0; x < random.length; x++) {
+    const tag: CreateTagDto = {
+      id: baseTags[x].id,
+      name: baseTags[x].name,
+      user_id: userId,
+    };
+    await tagService.create(tag);
+  }
+
+  // return random;
 };
 
 const createUserAccount = async () => {
-  for (let i = 0; i < 100; i++) {
+  for (let i = 1; i <= 100; i++) {
     const genders = ['male', 'female'];
     const sexuality = ['straight', 'gay', 'bisexual'];
     let coordinates = {
@@ -68,6 +92,7 @@ const createUserAccount = async () => {
     const password = await bcrypt.hash(clearPassword, SALT_ROUNDS); //5
     const sexual_orientation = faker.random.arrayElement(sexuality); //6
     const activated = true; //9
+    const is_connected = Math.floor(Math.random() * 2); //14
 
     const query = `INSERT INTO users(
 			username,
@@ -81,9 +106,10 @@ const createUserAccount = async () => {
 			activated,
 			localisation,
 			created_at,
-			birthdate
+			birthdate,
+      is_connected
 			)
-			VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, POINT($10, $11), $12, $13)`;
+			VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, POINT($10, $11), $12, $13, $14)`;
 
     await db.query(query, [
       username,
@@ -99,8 +125,39 @@ const createUserAccount = async () => {
       coordinates.y,
       created_at,
       birthdate,
+      is_connected,
     ]);
     console.log(`created user ${i}...`);
+
+    https.get(
+      `https://fakeface.rest/face/json?gender=${gender}&minimum_age=18&maximum_age=30`,
+      (res) => {
+        let body = '';
+        res.on('data', (d) => {
+          body += d;
+        });
+        res.on('end', async () => {
+          const fake = JSON.parse(body);
+          const path = fake.image_url;
+          const picture_query =
+            'INSERT INTO pictures(user_id, file_path) VALUES($1, $2)';
+          const default_picture_query =
+            'UPDATE users SET default_picture=$1 WHERE id=$2';
+          await db.query(picture_query, [i, path]);
+          await db.query(default_picture_query, [path, i]);
+        });
+      }
+    );
+
+    randTags(i);
+    // for (let x = 0; x < randomTags.length; x++) {
+    //   const tag: CreateTagDto = {
+    //     id: baseTags[x].id,
+    //     name: baseTags[x].name,
+    //     user_id: i,
+    //   };
+    //   await tagService.create(tag);
+    // }
   }
 };
 
