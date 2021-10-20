@@ -1,9 +1,15 @@
 build:
 	docker compose up -d
 
-stop_services:
+build_log:
+	docker compose up
+
+seed:
+	docker exec api npm run seed
+
+stop:
 	docker compose down
 
-remove_containers:
+clean:
 	docker rmi -f matcha_api
-	rm ./api/data
+	# rm -rf ./api/data
