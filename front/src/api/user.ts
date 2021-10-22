@@ -1,98 +1,148 @@
 import { API_BASE_URL } from 'utils/config';
-import { LOGGED_USER } from 'utils/const';
-import { getUserTokenFromLocalStorage } from 'utils/user';
+import {
+  getUserTokenFromLocalStorage,
+  getUserIdFromLocalStorage,
+} from 'utils/user';
 
+/**
+ * This interface is used in some places insted the one
+ * defined in interfaces/ because all the fields in this
+ * one here is optional, the user will not update all his/her
+ * info every single time.
+ */
 export interface UpdateUserInfoInterface {
   activated?: number | null;
   birthdate?: string | Date;
   created?: number | null;
-  description?: string;
+  biography?: string;
   email?: string;
   firstname?: string;
   gender?: string | null;
   id?: number;
   lastname?: string;
   localisation?: {
-    longitude: number;
-    latitude: number;
+    x: number; // longitude
+    y: number; // latitude
   };
   modified?: number | null;
   sexual_orientation?: string | null;
-  token?: string;
   username?: string;
   tags?: {
     id?: number;
     user_id?: number;
-    title?: string;
+    name?: string;
+  }[];
+  pictures?: {
+    id?: number;
+    path?: string;
   }[];
   age?: number;
+  default_picture?: string;
 }
 
 const updateUserInfo = async (user: UpdateUserInfoInterface) => {
-  const currentUser = localStorage.getItem(LOGGED_USER);
-
-  if (!currentUser) {
-    // tell the user update failed
-    return;
+  try {
+    const res = await fetch(
+      `${API_BASE_URL}/users/${getUserIdFromLocalStorage()}`,
+      {
+        method: 'PATCH',
+        mode: 'cors',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${getUserTokenFromLocalStorage()}`,
+        },
+        body: JSON.stringify(user),
+      }
+    );
+    return res;
+  } catch (err) {
+    console.log(`[catch error updateUserInfo()] ${err}`);
+    throw err;
   }
-  const data = JSON.parse(currentUser);
-  return fetch(`${API_BASE_URL}/users/me`, {
-    method: 'PATCH',
-    mode: 'cors',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `${data.token}`,
-    },
-    body: JSON.stringify(user),
-  }).then((res) => res);
 };
 
-const getUser = async (token: string) => {
-  return fetch(`${API_BASE_URL}/users/me`, {
-    method: 'GET',
-    mode: 'cors',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `${token}`,
-    },
-  }).then((res) => res);
+const updateUserCoordinates = async (user: UpdateUserInfoInterface) => {
+  try {
+    const res = await fetch(
+      `${API_BASE_URL}/users/${getUserIdFromLocalStorage()}/coordinates`,
+      {
+        method: 'PATCH',
+        mode: 'cors',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${getUserTokenFromLocalStorage()}`,
+        },
+        body: JSON.stringify(user),
+      }
+    );
+    return res;
+  } catch (err) {
+    console.log(`[catch error updateUserCoordinates()] ${err}`);
+    throw err;
+  }
+};
+
+const getUser = async () => {
+  try {
+    const res = await fetch(
+      `${API_BASE_URL}/users/${getUserIdFromLocalStorage()}`,
+      {
+        method: 'GET',
+        mode: 'cors',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${getUserTokenFromLocalStorage()}`,
+        },
+      }
+    );
+    return res;
+  } catch (err) {
+    console.log(`[catch error getUser()] ${err}`);
+    throw err;
+  }
 };
 
 const getUserById = async (id: number) => {
-  return fetch(`${API_BASE_URL}/users/${id}`, {
-    method: 'GET',
-    mode: 'cors',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `${getUserTokenFromLocalStorage()}`,
-    },
-  })
-    .then((res) => {
-      if (!res.ok) {
-        throw new Error(res.statusText);
-      }
-      return res;
-    })
-    .catch((err) => {
-      console.log(`[catch error uploadPicture()] ${err}`);
-      throw err;
+  try {
+    const res = await fetch(`${API_BASE_URL}/users/${id}`, {
+      method: 'GET',
+      mode: 'cors',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${getUserTokenFromLocalStorage()}`,
+      },
     });
+    if (!res.ok) {
+      throw new Error(res.statusText);
+    }
+    return res;
+  } catch (err) {
+    console.log(`[catch error getUserById()] ${err}`);
+    throw err;
+  }
 };
 
 const getUsers = async () => {
-  const currentUser = localStorage.getItem(LOGGED_USER);
-  if (!currentUser) {
-    return;
+  try {
+    const res = await fetch(`${API_BASE_URL}/users`, {
+      method: 'GET',
+      mode: 'cors',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${getUserTokenFromLocalStorage()}`,
+      },
+    });
+    return res;
+  } catch (err) {
+    console.log(`[catch error getUsers()] ${err}`);
+    throw err;
   }
-  const data = JSON.parse(currentUser);
-  return fetch(`${API_BASE_URL}/users`, {
-    method: 'GET',
-    mode: 'cors',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `${data.token}`,
-    },
-  }).then((res) => res);
 };
 
-export { getUser, getUserById, getUsers, updateUserInfo };
+export {
+  getUser,
+  getUserById,
+  getUsers,
+  updateUserInfo,
+  updateUserCoordinates,
+};

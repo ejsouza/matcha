@@ -15,22 +15,23 @@ let store: redux.Store | undefined;
 export const user: UserInterface = {
   activated: null,
   birthdate: null,
-  created: null,
-  description: '',
+  created_at: new Date(),
+  updated_at: new Date(),
+  biography: '',
   email: '',
   firstname: '',
   gender: null,
   id: 0,
   lastname: '',
   localisation: {
-    longitude: 0,
-    latitude: 0,
+    x: 0,
+    y: 0,
   },
   modified: null,
   sexual_orientation: 'bisexual',
-  token: '',
   username: '',
-  tags: [],
+  default_picture: '',
+  is_connected: 0,
 };
 
 const initialState = {

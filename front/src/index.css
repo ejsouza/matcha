@@ -1,3 +1,8 @@
+:root {
+  --primary-color: #fd297b;
+  --secondary-color: #ff655b;
+  --primary-gradient-color: linear-gradient(to right, #fd297b, #ff655b);
+}
 body {
   margin: 0;
   overflow-x: hidden !important; /* Be careful - Blocks scroll in the x position - to fix react card effect */

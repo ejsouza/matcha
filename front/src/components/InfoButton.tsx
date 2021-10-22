@@ -1,12 +1,11 @@
 import { useState } from 'react';
 import { Modal, Button, Carousel, Badge } from 'react-bootstrap';
-import { getUserById, UpdateUserInfoInterface } from 'api/user';
-import { getUserCity, aHundredLengthBio } from 'utils/user';
+import { UpdateUserInfoInterface } from 'api/user';
+import { getUserCity, aHundredLengthBio, calculateAge } from 'utils/user';
 import { FlexBox } from 'globalStyled';
 import { Wrapper } from './LikeButton';
 import styled from 'styled-components';
 import info from 'assets/icons/info.svg';
-import womanOne from 'assets/img/womanOne.jpg';
 import location from 'assets/icons/location.svg';
 import sexualOrientation from 'assets/icons/sexualOrientation.svg';
 import gender from 'assets/icons/gender.svg';
@@ -32,14 +31,15 @@ const ProfileInfo = styled.div`
   color: #868e96;
   border: 1px solid red;
   span {
-    font-weight: bolder;
+    letter-spacing: 0.1em;
   }
 `;
 
-const InfoButton = ({ id }: { id: number | undefined }) => {
+const InfoButton = (props: { user: UpdateUserInfoInterface }) => {
   const [profile, setProfile] = useState<UpdateUserInfoInterface>();
   const [show, setShow] = useState(false);
   const [userCity, setUserCity] = useState('');
+  const [birthDate, setBirthDate] = useState('');
 
   const handleClose = () => {
     setShow(false);
@@ -48,25 +48,18 @@ const InfoButton = ({ id }: { id: number | undefined }) => {
   const handleShow = () => setShow(true);
 
   const hanldeUserInfo = () => {
-    console.log(`show user info for id ${id}`);
-    if (id) {
-      getUserById(id).then((res) => {
-        if (!res || !res.ok) {
-          return;
-        }
-        res.json().then((user: UpdateUserInfoInterface) => {
-          setProfile(user);
-          console.log(user);
-          const city = getUserCity({
-            longitude: user.localisation?.longitude,
-            latitude: user.localisation?.latitude,
-          });
-          city.then((info) => {
-            console.log(`user city --> ${info}`);
-            setUserCity(info);
-            handleShow();
-          });
-        });
+    if (props?.user?.id) {
+      setProfile(props.user);
+      if (typeof props.user.birthdate === 'string') {
+        setBirthDate(props.user.birthdate);
+      }
+      const city = getUserCity({
+        longitude: props.user.localisation?.x,
+        latitude: props.user.localisation?.y,
+      });
+      city.then((info) => {
+        setUserCity(info);
+        handleShow();
       });
     }
   };
@@ -92,36 +85,22 @@ const InfoButton = ({ id }: { id: number | undefined }) => {
                 <CarouselWrapper>
                   <Carousel>
                     <Carousel.Item>
-                      <img
-                        className="d-block w-100"
-                        src={womanOne}
-                        alt="First slide"
-                        width="300"
-                        height="500"
-                      />
-                      <Carousel.Caption></Carousel.Caption>
-                    </Carousel.Item>
-                    <Carousel.Item>
-                      <img
-                        className="d-block w-100"
-                        src={womanOne}
-                        alt="Second slide"
-                        width="300"
-                        height="500"
-                      />
-
-                      <Carousel.Caption></Carousel.Caption>
-                    </Carousel.Item>
-                    <Carousel.Item>
-                      <img
-                        className="d-block w-100"
-                        src={womanOne}
-                        alt="Third slide"
-                        width="300"
-                        height="500"
-                      />
-
-                      <Carousel.Caption></Carousel.Caption>
+                      {profile?.pictures?.map((picture) => (
+                        <div key={picture.id}>
+                          <img
+                            className="d-block w-100"
+                            src={
+                              picture.path?.startsWith('https')
+                                ? picture.path
+                                : `${process.env.REACT_APP_API_URL}/uploads/${picture.path}`
+                            }
+                            alt="First slide"
+                            width="300"
+                            height="500"
+                          />
+                          <Carousel.Caption></Carousel.Caption>
+                        </div>
+                      ))}
                     </Carousel.Item>
                   </Carousel>
                 </CarouselWrapper>
@@ -133,7 +112,7 @@ const InfoButton = ({ id }: { id: number | undefined }) => {
                   </p>
                   <p>
                     <img src={agePlus18} alt="age" />
-                    &nbsp;{profile.age} years old
+                    &nbsp;{calculateAge(birthDate)} years old
                   </p>
                   <p>
                     <img src={gender} alt="gender" />
@@ -151,12 +130,12 @@ const InfoButton = ({ id }: { id: number | undefined }) => {
                   <p>
                     <img src={userDescription} alt="userDescription" />
                     &nbsp;
-                    {aHundredLengthBio(profile.description)}
+                    {aHundredLengthBio(profile.biography)}
                   </p>
                   <p>
                     <img src={tagIcon} alt="tagIcon" width="28" height="18" />
-                    {profile.tags?.map((t) => (
-                      <span>{t.title}</span>
+                    {profile.tags?.map((tag) => (
+                      <span key={tag.id}> #{tag.name}</span>
                     ))}
                   </p>
                 </ProfileInfo>

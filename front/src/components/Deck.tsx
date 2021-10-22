@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSprings, animated, to as interpolate } from 'react-spring';
-import { useDrag, useGesture, usePinch } from 'react-use-gesture';
-import { Modal } from 'react-bootstrap';
+import { useGesture } from 'react-use-gesture';
+import { Modal, Container, Row, Col } from 'react-bootstrap';
 import styled from 'styled-components';
 import { useAppDispatch, useAppSelector } from 'store/hook';
 import LikeButton from './LikeButton';
@@ -10,20 +10,28 @@ import DislikeButton from './DislikeButton';
 import { getUsers, UpdateUserInfoInterface } from 'api/user';
 import { CREATED, SUCCESS } from 'utils/const';
 import { aHundredLengthBio } from 'utils/user';
-import { likeProfile, getAllLikes, getLikedBy } from 'api/like';
+import { likeProfile, getLikedUserLikes, dislikeProfile } from 'api/like';
 import { UserInterface } from 'interfaces';
 import { FlexBox, Gap } from 'globalStyled';
 import Button from './Button';
 import MessageCard from './MessageCard';
-import manProfile from 'assets/img/man-profile.png';
-import womanProfile from 'assets/img/woman-profile.png';
+
+interface TagInterface {
+  id: number;
+  name: string;
+}
+
+interface LikesInterface {
+  user_id: number;
+  liked_id: number;
+}
 
 const ButtonsContainer = styled.div`
   position: relative;
   display: flex;
   justify-content: space-between;
   width: 100%;
-  max-width: 320px;
+  max-width: 360px;
   margin: auto;
   // margin-top: 500px;
   padding: 0 16px;
@@ -35,9 +43,9 @@ const ButtonItem = styled.div``;
 const InfoContainer = styled.div`
   color: #fff;
   padding: 0 24px;
-  margin: 420px 0 20px 0;
+  margin: 450px 0 20px 0;
   p {
-    height: 100px;
+    height: 30px;
   }
 `;
 
@@ -58,6 +66,7 @@ const RoundedImg = styled.img`
   border-radius: 50%;
   width: 150px;
   height: 150px;
+  object-fit: cover;
 `;
 
 const ButtonWrapper = styled.div`
@@ -86,14 +95,25 @@ export const StyledButtonWhite = styled.button`
   }
 `;
 
-const cards = [
-  'https://upload.wikimedia.org/wikipedia/en/f/f5/RWS_Tarot_08_Strength.jpg',
-  'https://upload.wikimedia.org/wikipedia/en/5/53/RWS_Tarot_16_Tower.jpg',
-  'https://upload.wikimedia.org/wikipedia/en/9/9b/RWS_Tarot_07_Chariot.jpg',
-  'https://upload.wikimedia.org/wikipedia/en/d/db/RWS_Tarot_06_Lovers.jpg',
-  'https://upload.wikimedia.org/wikipedia/en/thumb/8/88/RWS_Tarot_02_High_Priestess.jpg/690px-RWS_Tarot_02_High_Priestess.jpg',
-  'https://upload.wikimedia.org/wikipedia/en/d/de/RWS_Tarot_01_Magician.jpg',
-];
+const TagContainer = styled.div`
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  width: 330px;
+  max-width: 400px;
+  z-index: 1;
+`;
+
+const TagWrapper = styled.div`
+  text-align: center;
+  border-radius: 20px;
+  padding: 0.2em 0.8em;
+  width: 100px;
+  height: auto;
+  background: var(--primary-gradient-color);
+  color: #fff;
+`;
 
 // These two are just helpers, they curate spring data, values that are later being interpolated into css
 const to = (i: number) => ({
@@ -109,12 +129,6 @@ const trans = (r: number, s: any) =>
     r / 10
   }deg) rotateZ(${r}deg) scale(${s})`;
 
-interface LikesInterface {
-  id: number;
-  from_user_id: number;
-  to_user_id: number;
-  created: string;
-}
 const Deck = () => {
   const [users, setUsers] = useState<UpdateUserInfoInterface[]>([]);
   const [matchedProfile, setMatchedProfile] =
@@ -132,12 +146,18 @@ const Deck = () => {
   useEffect(() => {
     getUsers().then((res) => {
       if (res?.status === SUCCESS) {
-        res.json().then((usrs) => {
-          console.log(usrs);
-          setUsers(usrs);
+        res.json().then((match) => {
+          console.log(match.users);
+          setUsers(match.users);
         });
+      } else {
+        console.log(`error getting users ${res?.status}`);
       }
     });
+    /**
+     * Probably here we need to watch for user updates
+     * in case user changes his preference (distance, sexuality...)
+     */
   }, []);
 
   const handleCloseShowMatch = () => {
@@ -154,40 +174,39 @@ const Deck = () => {
   const handleCloseSendMessage = () => {
     setShowMessageCard(true);
   };
-  const isMatch = (index: number, direction: number) => {
-    const user = users[index];
+  const isMatch = async (index: number, direction: number) => {
+    const currentUserCard = users[index];
     if (direction < 0) {
-      console.log(`You disliked := ${user.username}`);
+      if (currentUserCard.id) {
+        const res = await dislikeProfile(currentUserCard.id);
+        if (res.status !== CREATED) {
+          console.log(`Dislike failed...`);
+        } else {
+          console.log(`You disliked := ${currentUserCard.username}`);
+        }
+      }
     } else if (direction > 0) {
-      console.log(`You liked ${user.username} with id ${user.id}`);
-      if (user.id) {
-        likeProfile(user.id)?.then((res) => {
-          console.log(`gets here 1 ${res.status}`);
-          if (res.status === CREATED) {
-            console.log(`gets here 2`);
-
-            getLikedBy()
-              ?.then((res) => {
-                if (!res || res.status !== SUCCESS) {
-                  return;
-                }
-                res.json().then((likes: LikesInterface[]) => {
-                  const usersMatched = likes.find(
-                    (like) => like.from_user_id === user.id
-                  );
-                  if (usersMatched) {
-                    setMatchedProfile(user);
-                    handleShowMatch();
-                  } else {
-                    console.log(
-                      `usersMatched is ${usersMatched} -- id ${user.id}`
-                    );
-                  }
-                });
-              })
-              .catch((err) => {});
+      console.log(
+        `You liked ${currentUserCard.username} with id ${currentUserCard.id}`
+      );
+      if (currentUserCard.id) {
+        const res = await likeProfile(currentUserCard.id);
+        if (res.status === CREATED) {
+          const resLikes = await getLikedUserLikes(currentUserCard.id);
+          const userCard = await resLikes.json();
+          const likes: LikesInterface[] = userCard.likes;
+          const isMatch = likes.find(
+            (like: { liked_id: number }) => like.liked_id === currentUser.id
+          );
+          if (isMatch) {
+            setMatchedProfile(currentUserCard);
+            handleShowMatch();
+            console.log(`IS A MATCH...${isMatch}`);
           }
-        });
+        } else {
+          const error = await res.json();
+          console.log(`ERROR := ${error.message}`);
+        }
       }
     }
   };
@@ -265,25 +284,31 @@ const Deck = () => {
               {...bind(i)}
               style={{
                 transform: interpolate([rot, scale], trans),
-                // backgroundImage: `url(${users[i]})`,
-                backgroundImage: `url(https://images-ssl.gotinder.com/u/eJS9fZtU4ZoWYv5MxuQnqD/wycGLpSGGd8VkwEYiwhJ8e.jpg?Policy=eyJTdGF0ZW1lbnQiOiBbeyJSZXNvdXJjZSI6IiovdS9lSlM5Zlp0VTRab1dZdjVNeHVRbnFELyoiLCJDb25kaXRpb24iOnsiRGF0ZUxlc3NUaGFuIjp7IkFXUzpFcG9jaFRpbWUiOjE2MzA1NzAwNDV9fX1dfQ__&Signature=sspQA5wseaM~Uzt5Ag6JKq2krwiZugIrAi7077L~nnQ6WreUGBNCum1YhbYazdxsj1FHCrZfpI5bbLrp-K14beg9Ef9JmddCtjU3~kwFAdAXKGOD87NO2qVRJJUfy1eT-gGotFebp5Km2e2OxjBi~-MQSSFnN4twHmrgTj96WOntnzKq8i-WCqMjkvtPXtkQ8XlzbeYFNCnRUsg26BJ7qfAOpeb2lae78YvYtoZsccZXGpgZhsgVlWxa4v3NtE-BLz1LzAeQyJ1AYeWn2qMzIa6BdE-dKusE6XkNsCt~dPJ7Xptj3vtkowiKcpQGgPfhzNQwE7Y4ElwJ2xJT7XLaVg__&Key-Pair-Id=K368TLDEUPA6OI)`,
-                // backgroundImage: `url(https://randomuser.me/api/portraits/${
-                //   users[i].gender === 'M' ? 'men' : 'women'
-                // }/${i}.jpg)`,
+                backgroundImage: `url(${
+                  users[i]?.default_picture?.startsWith('https')
+                    ? users[i]?.default_picture
+                    : `${process.env.REACT_APP_API_URL}/uploads/${users[i]?.default_picture}`
+                })`,
               }}
             >
               <InfoContainer>
                 <h3>
                   {users[i]?.firstname}&nbsp;{users[i]?.age}
                 </h3>
-                <p>{aHundredLengthBio(users[i]?.description)}</p>
+                <p>{aHundredLengthBio(users[i]?.biography)}</p>
+                <TagContainer>
+                  {users[i].tags?.slice(0, 3).map((tag) => (
+                    <TagWrapper key={tag.id}>{tag.name}</TagWrapper>
+                  ))}
+                </TagContainer>
               </InfoContainer>
+              <TagContainer></TagContainer>
               <ButtonsContainer>
                 <ButtonItem onClick={() => dislike(i)}>
                   <DislikeButton />
                 </ButtonItem>
                 <ButtonItem>
-                  <InfoButton id={users[i].id} />
+                  <InfoButton user={users[i]} />
                 </ButtonItem>
                 <ButtonItem onClick={() => like(i)}>
                   <LikeButton />
@@ -306,9 +331,19 @@ const Deck = () => {
             You and {matchedProfile?.firstname} have liked each other.
           </StyledP>
           <FlexBox alignItems="center" justifyContent="center">
-            <RoundedImg src={manProfile} alt="avatarOne" />
+            <RoundedImg
+              src={`${process.env.REACT_APP_API_URL}/uploads/${currentUser.default_picture}`}
+              alt="avatarOne"
+            />
             <Gap>&nbsp;&nbsp;&nbsp;</Gap>
-            <RoundedImg src={womanProfile} alt="avatarTwo" />
+            <RoundedImg
+              src={
+                matchedProfile?.default_picture?.startsWith('https')
+                  ? matchedProfile?.default_picture
+                  : `${process.env.REACT_APP_API_URL}/uploads/${matchedProfile?.default_picture}`
+              }
+              alt="avatarTwo"
+            />
           </FlexBox>
           {!showMessageCard && (
             <>

@@ -4,8 +4,12 @@ import styled from 'styled-components';
 import UpdateLink from './Desktop/UpdateLink';
 import Button from './Button';
 import { uploadPicture, getPictures, deletePicture } from 'api/picture';
+import { getUser } from 'api/user';
+import { useAppDispatch, useAppSelector } from 'store/hook';
+import { isLoggedUpdated, userInfoUpdated } from 'store/actions';
+import { UserInterface } from 'interfaces';
 import { FlexBox, Gap } from 'globalStyled';
-import womanOne from 'assets/img/womanOne.jpg';
+import { API_BASE_URL } from 'utils/config';
 
 const ImgPreview = styled.img`
   width: 200px;
@@ -42,10 +46,10 @@ const DeleteFromGallery = styled.div`
 interface PicturesInterface {
   id: number;
   user_id: number;
-  created: Date;
-  path: string;
+  file_path: string;
 }
 const Pictures = () => {
+  const dispatch = useAppDispatch();
   const [show, setShow] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | undefined>();
@@ -76,9 +80,11 @@ const Pictures = () => {
           console.log(`something went worong getting user pictures`);
           return;
         }
-        res.json().then((pictures: PicturesInterface[]) => {
+        res.json().then((user) => {
+          const pictures: PicturesInterface[] = user.pictures;
+          pictures.forEach((picture) => console.log(picture.file_path));
+
           setPictures(pictures);
-          pictures.forEach((picture) => console.log(picture.path));
         });
       })
       .catch((err) => {
@@ -131,6 +137,12 @@ const Pictures = () => {
           return;
         }
         getGallery();
+        getUser().then((res) => {
+          res.json().then((data) => {
+            const updatedUser: UserInterface = data;
+            dispatch(userInfoUpdated({ ...updatedUser }));
+          });
+        });
       })
       .catch((err) => {
         console.log(`Error deleting pictures := ${err}`);
@@ -151,8 +163,10 @@ const Pictures = () => {
               setShowAlert(false);
               setVariant('');
             }, 2000);
+
             return;
           }
+          getGallery();
           setPreview(undefined);
           setSelectedFile(undefined);
           setVariant('success');
@@ -162,6 +176,12 @@ const Pictures = () => {
             setShowAlert(false);
             setVariant('');
           }, 2000);
+          getUser().then((res) => {
+            res.json().then((data) => {
+              const updatedUser: UserInterface = data;
+              dispatch(userInfoUpdated({ ...updatedUser }));
+            });
+          });
         })
         .catch((err) => {
           setVariant('danger');
@@ -192,38 +212,22 @@ const Pictures = () => {
         {show && (
           <Modal.Body>
             <Carousel>
-              <Carousel.Item>
-                <CarouselPictures
-                  className="d-block w-100"
-                  src={womanOne}
-                  alt="First slide"
-                  width="300"
-                  height="500"
-                />
-                <Carousel.Caption></Carousel.Caption>
-              </Carousel.Item>
-              <Carousel.Item>
-                <CarouselPictures
-                  className="d-block w-100"
-                  src={womanOne}
-                  alt="Second slide"
-                  width="300"
-                  height="500"
-                />
+              {pictures.map((picture) => {
+                const path = `${API_BASE_URL}/uploads/${picture.file_path}`;
+                return (
+                  <Carousel.Item key={picture.id}>
+                    <CarouselPictures
+                      className="d-block w-100"
+                      src={path}
+                      alt="Second slide"
+                      width="300"
+                      height="500"
+                    />
 
-                <Carousel.Caption></Carousel.Caption>
-              </Carousel.Item>
-              <Carousel.Item>
-                <CarouselPictures
-                  className="d-block w-100"
-                  src={womanOne}
-                  alt="Third slide"
-                  width="300"
-                  height="500"
-                />
-
-                <Carousel.Caption></Carousel.Caption>
-              </Carousel.Item>
+                    <Carousel.Caption></Carousel.Caption>
+                  </Carousel.Item>
+                );
+              })}
             </Carousel>
           </Modal.Body>
         )}
@@ -258,7 +262,7 @@ const Pictures = () => {
             <>
               <FlexBox flexWrap="wrap" gap="10px">
                 {pictures.map((picture) => {
-                  let path = picture.path;
+                  const path = `${API_BASE_URL}/uploads/${picture.file_path}`;
                   return (
                     <ImgWrapper key={picture.id}>
                       <DeleteFromGallery
@@ -321,11 +325,7 @@ const Pictures = () => {
                           </defs>
                         </svg>
                       </DeleteFromGallery>
-                      <ImgPreview
-                        src={`https://images.unsplash.com/photo-1631355900166-e2974bbf2ab7?ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&ixlib=rb-1.2.1&auto=format&fit=crop&w=700&q=80`}
-                        width="120"
-                        height="80"
-                      />
+                      <ImgPreview src={path} width="120" height="80" />
                     </ImgWrapper>
                   );
                 })}
@@ -341,10 +341,16 @@ const Pictures = () => {
                 <input
                   type="file"
                   id="file"
+                  name="uploaded_file"
                   className="file"
                   onChange={onSelectFile}
+                  disabled={pictures.length >= 5}
                 />
-                <label htmlFor="file">Select picture</label>
+                <label htmlFor="file">
+                  {pictures.length >= 5
+                    ? `Max photos 5 (remove to upload)`
+                    : 'Select picture'}
+                </label>
               </>
             )}
             {selectedFile && (

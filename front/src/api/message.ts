@@ -1,19 +1,13 @@
 import { API_BASE_URL } from 'utils/config';
-import { LOGGED_USER } from 'utils/const';
-import { UpdateUserInfoInterface } from './user';
+import { getUserTokenFromLocalStorage } from 'utils/user';
 
 const sendMessage = async (message: string, id: string) => {
-  const currentUser = localStorage.getItem(LOGGED_USER);
-  if (!currentUser) {
-    return;
-  }
-  const data: UpdateUserInfoInterface = JSON.parse(currentUser);
   return fetch(`${API_BASE_URL}/messages`, {
     method: 'POST',
     mode: 'cors',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `${data.token}`,
+      Authorization: `Bearer ${getUserTokenFromLocalStorage()}`,
     },
     body: JSON.stringify({
       to_user_id: id,
@@ -33,17 +27,12 @@ const sendMessage = async (message: string, id: string) => {
 };
 
 const getMessage = async () => {
-  const currentUser = localStorage.getItem(LOGGED_USER);
-  if (!currentUser) {
-    return;
-  }
-  const data: UpdateUserInfoInterface = JSON.parse(currentUser);
   return fetch(`${API_BASE_URL}/messages`, {
     method: 'GET',
     mode: 'cors',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `${data.token}`,
+      Authorization: `${getUserTokenFromLocalStorage()}`,
     },
   })
     .then((res) => {

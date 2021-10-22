@@ -5,8 +5,12 @@ import { userInfoUpdated } from 'store/actions';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import UpdateLink from './Desktop/UpdateLink';
 import { UserInterface } from 'interfaces';
-import { getUser, updateUserInfo, UpdateUserInfoInterface } from 'api/user';
-import { SUCCESS } from 'utils/const';
+import {
+  getUser,
+  updateUserCoordinates,
+  UpdateUserInfoInterface,
+} from 'api/user';
+import { SUCCESS, CREATED } from 'utils/const';
 
 interface LatLngInterface {
   _latlng: { lat: number; lng: number };
@@ -34,14 +38,15 @@ const ShowMap = () => {
             setPosition(pos._latlng);
             const usr: UpdateUserInfoInterface = {};
             usr.localisation = {
-              latitude: pos._latlng.lat,
-              longitude: pos._latlng.lng,
+              x: pos._latlng.lng,
+              y: pos._latlng.lat,
             };
-            updateUserInfo(usr).then((res) => {
-              if (res?.status === SUCCESS) {
-                getUser(user.token).then((res) => {
-                  if (res.status === SUCCESS) {
+            updateUserCoordinates(usr).then((res) => {
+              if (res?.status === CREATED) {
+                getUser().then((res) => {
+                  if (res?.status === SUCCESS) {
                     res.json().then((userUpdated: UserInterface) => {
+                      console.log(`HERE COMES THE PRBLEM ${userUpdated}`);
                       dispatch(userInfoUpdated({ ...userUpdated }));
                     });
                   }
@@ -52,13 +57,13 @@ const ShowMap = () => {
         }
       },
     }),
-    [dispatch, user.token]
+    [dispatch]
   );
 
   useEffect(() => {
     const getUserGeolocation = async () => {
       const userGeolocation = await fetch(
-        `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${user?.localisation?.latitude}&longitude=${user?.localisation?.longitude}&localityLanguage=en`,
+        `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${user?.localisation?.y}&longitude=${user?.localisation?.x}&localityLanguage=en`,
         {
           mode: 'cors',
         }
@@ -68,11 +73,13 @@ const ShowMap = () => {
       setCity(userGeoData.locality);
       setCountry(userGeoData.countryName);
     };
-    getUserGeolocation();
-    setPosition({
-      lat: user?.localisation?.latitude,
-      lng: user?.localisation?.longitude,
-    });
+    if (user) {
+      getUserGeolocation();
+      setPosition({
+        lat: user?.localisation?.y,
+        lng: user?.localisation?.x,
+      });
+    }
   }, [user]);
   const handleShowMap = () => setShow(true);
 

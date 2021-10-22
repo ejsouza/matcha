@@ -5,7 +5,7 @@ import { Container, Row, Col, Alert } from 'react-bootstrap';
 import Settings from 'components/Settings';
 import Likes from 'components/Likes';
 import Deck from 'components/Deck';
-import { updateUserInfo, UpdateUserInfoInterface } from 'api/user';
+import { updateUserCoordinates, UpdateUserInfoInterface } from 'api/user';
 import defaultProfilePicture from 'assets/icons/profile-picture-default.svg';
 import briefcase from 'assets/icons/brief_case.svg';
 
@@ -58,7 +58,11 @@ const HomeDesktop = () => {
 
   useEffect(() => {
     const userGeolocation: UpdateUserInfoInterface = {};
-
+    const options = {
+      enableHighAccuracy: true,
+      timeout: 5000,
+      maximumAge: 0,
+    };
     const error = async () => {
       setErrorGeo(true);
       const userIp = await fetch('https://api.ipify.org?format=json')
@@ -70,26 +74,31 @@ const HomeDesktop = () => {
         .then((data) => data);
 
       userGeo.then((geo) => {
-        console.log(geo);
         userGeolocation.localisation = {
-          latitude: geo.geoplugin_latitude,
-          longitude: geo.geoplugin_longitude,
+          x: geo.geoplugin_longitude,
+          y: geo.geoplugin_latitude,
         };
-        updateUserInfo(userGeolocation);
+        // updateUserInfo(userGeolocation);
+        updateUserCoordinates(userGeolocation);
       });
     };
 
     const success = async (position: GeolocationPosition) => {
-      const latitude = position.coords.latitude;
-      const longitude = position.coords.longitude;
-      userGeolocation.localisation = {
-        latitude,
-        longitude,
-      };
+      const x = position.coords.longitude;
+      const y = position.coords.latitude;
 
-      updateUserInfo(userGeolocation);
+      userGeolocation.localisation = {
+        x,
+        y,
+      };
+      try {
+        await updateUserCoordinates(userGeolocation);
+      } catch (err) {
+        console.log(`catch error on updating user coordinates := ${err}`);
+      }
     };
-    navigator.geolocation.getCurrentPosition(success, error);
+
+    navigator.geolocation.getCurrentPosition(success, error, options);
   }, []);
 
   const handleShowSettings = () => {

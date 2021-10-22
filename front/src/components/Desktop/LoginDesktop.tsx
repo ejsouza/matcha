@@ -11,8 +11,14 @@ import {
 } from 'store/actions';
 import Button from 'components/Button';
 import { login } from 'api/auth';
-import { UNAUTHORIZED, AUTHORIZED, LOGGED_USER } from 'utils/const';
-import { UserInterface } from 'interfaces';
+import {
+  UNAUTHORIZED,
+  AUTHORIZED,
+  LOGGED_USER,
+  CREATED,
+  USER_TOKEN,
+} from 'utils/const';
+import { UserInterface, ApiResponse } from 'interfaces';
 
 /************************* STYLED COMPONENTS *************************/
 
@@ -60,20 +66,26 @@ const LoginDesktop = () => {
     }
     try {
       const res = await login(userName, password);
-      const user: UserInterface = await res.json();
-      console.log('here ', user);
-      if (res.status === UNAUTHORIZED) {
+      const data: ApiResponse = await res.json();
+      const user: UserInterface = data.user;
+      const token = data.token;
+      console.log('login(user) ', user);
+      console.log('login(token) ', token);
+      console.log(`status(${res.status})`);
+      if (res.status === CREATED) {
+        localStorage.setItem(LOGGED_USER, JSON.stringify(user));
+        localStorage.setItem(USER_TOKEN, token);
+
+        dispatch(showLoginCardUpdated(false));
+        dispatch(isLoggedUpdated(true));
+        dispatch(userInfoUpdated({ ...user }));
+      } else {
         setShowError(true);
         setTimeout(() => {
           setShowError(false);
         }, 2000);
       }
-      if (res.status === AUTHORIZED) {
-        localStorage.setItem(LOGGED_USER, JSON.stringify(user));
-        dispatch(showLoginCardUpdated(false));
-        dispatch(isLoggedUpdated(true));
-        dispatch(userInfoUpdated(user));
-      }
+
       console.log(
         `submited ${res.status}[${res.statusText}] - ${user.firstname} - ${user.sexual_orientation}`
       );

@@ -1,5 +1,5 @@
 import { UserInterface } from 'interfaces';
-import { LOGGED_USER } from 'utils/const';
+import { LOGGED_USER, USER_TOKEN } from 'utils/const';
 import { UpdateUserInfoInterface } from 'api/user';
 
 interface UserLocation {
@@ -37,13 +37,24 @@ const aHundredLengthBio = (bio: string | undefined) => {
 };
 
 const getUserTokenFromLocalStorage = () => {
+  const token = localStorage.getItem(USER_TOKEN);
+
+  if (!token) {
+    return '';
+  }
+  return token;
+};
+
+const getUserIdFromLocalStorage = () => {
   const currentUser = localStorage.getItem(LOGGED_USER);
 
   if (!currentUser) {
-    return '';
+    console.log(`getUserIdFromLocalStorage(ERROR)`);
+    return undefined;
   }
-  const data: UpdateUserInfoInterface = JSON.parse(currentUser);
-  return data.token;
+  const user: UpdateUserInfoInterface = JSON.parse(currentUser);
+  console.log(`getUserIdFromLocalStorage(${user.id})`);
+  return user.id;
 };
 
 const getUserCity = async (location: UserLocation) => {
@@ -62,9 +73,36 @@ const getUserCity = async (location: UserLocation) => {
   const city = userGeoData?.locality || '';
   return city;
 };
+
+const calculateAge = (birthDate: string) => {
+  if (!birthDate.length) {
+    return 25;
+  }
+  const birth = new Date(birthDate);
+  const birthDay = Number(birth.getDate());
+  const birthMonth = Number(birth.getMonth());
+  const birthYear = Number(birth.getFullYear());
+
+  const today = new Date();
+  const todayDay = Number(today.getDate());
+  const todayMonth = Number(today.getMonth());
+  const todayYear = Number(today.getFullYear());
+
+  let age = todayYear - birthYear;
+  if (birthMonth > todayMonth) {
+    age--;
+  }
+  if (birthMonth === todayMonth && todayDay < birthDay) {
+    age--;
+  }
+  return age;
+};
+
 export {
   lookingFor,
   aHundredLengthBio,
   getUserTokenFromLocalStorage,
+  getUserIdFromLocalStorage,
   getUserCity,
+  calculateAge,
 };

@@ -81,6 +81,7 @@ const SignUp = () => {
       email,
       password,
     });
+    console.log(`API RESPONSE ${res.status}`);
     if (res.status === CREATED) {
       // tell user to confirm his account before trying to login
       closeCard();

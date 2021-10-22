@@ -13,9 +13,11 @@ const BAD_REQUEST = 400;
 const UNAUTHORIZED = 401;
 
 const LOGGED_USER = 'loggedUser';
+const USER_TOKEN = 'userToken';
 
 const PASS_REGEX = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])[0-9a-zA-Z]{6,}$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export {
   IS_LOGGED_UPDATED,
   TOKEN_UPDATED,
@@ -28,6 +30,7 @@ export {
   CREATED,
   BAD_REQUEST,
   LOGGED_USER,
+  USER_TOKEN,
   PASS_REGEX,
   EMAIL_REGEX,
   USER_INFO_UPDATED,

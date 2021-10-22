@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { Col, Row, Modal, Form } from 'react-bootstrap';
-// import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import UpdateLink from './Desktop/UpdateLink';
 import { useAppDispatch, useAppSelector } from 'store/hook';
 import { UserInterface } from 'interfaces';
@@ -12,11 +11,11 @@ import Pictures from './Pictures';
 import RangeSlider from './rangeSlider';
 import { Gap } from 'globalStyled';
 import { Button } from 'react-bootstrap';
-import { LOGGED_USER, PASS_REGEX, SUCCESS } from 'utils/const';
+import { LOGGED_USER, PASS_REGEX, CREATED, USER_TOKEN } from 'utils/const';
 import { lookingFor } from 'utils/user';
 import { user as userInitialState } from 'store';
 import { isLoggedUpdated, userInfoUpdated } from 'store/actions';
-import { getUser, updateUserInfo, UpdateUserInfoInterface } from 'api/user';
+import { updateUserInfo, UpdateUserInfoInterface } from 'api/user';
 import styled from 'styled-components';
 
 const DiscoveryArea = styled.div`
@@ -53,18 +52,21 @@ const Settings = () => {
   const activateShowChangePassword = () => setShowChangePassword(true);
 
   useEffect(() => {
-    setUserName(user.username);
-    setEmail(user.email);
-    setFirstName(user.firstname);
-    setLastName(user.lastname);
-    setGender(user.gender);
-    setBirthDate(user.birthdate);
-    setDescription(user.description);
-    setSexualOrientation(user.sexual_orientation);
+    if (user) {
+      setUserName(user.username);
+      setEmail(user.email);
+      setFirstName(user.firstname);
+      setLastName(user.lastname);
+      setGender(user.gender);
+      setBirthDate(user.birthdate);
+      setDescription(user.biography);
+      setSexualOrientation(user.sexual_orientation);
+    }
   }, [user]);
 
   const logOut = () => {
     localStorage.removeItem(LOGGED_USER);
+    localStorage.removeItem(USER_TOKEN);
     dispatch(isLoggedUpdated(false));
     dispatch(userInfoUpdated(userInitialState));
   };
@@ -74,7 +76,6 @@ const Settings = () => {
     let usr: UpdateUserInfoInterface = {};
     if (birthDate) {
       usr.birthdate = new Date(birthDate);
-      console.log(`birthdate := ${birthDate} -- ${usr.birthdate}`);
     }
     if (userName && userName !== user.username) {
       usr.username = userName;
@@ -92,36 +93,31 @@ const Settings = () => {
       usr.sexual_orientation = sexualOrientation;
     }
     if (description) {
-      usr.description = description;
+      usr.biography = description;
     }
     if (Object.keys(usr).length > 0) {
       try {
         const res = await updateUserInfo(usr);
-        const data = await res?.json();
-        Object.entries(data).forEach((d) => console.log(d));
-        if (res?.status === SUCCESS) {
-          const response = await getUser(user.token);
-          const userData: UserInterface = await response.json();
-          console.log(`userData := ${userData}`);
-          if (response.status === SUCCESS) {
-            dispatch(userInfoUpdated({ ...userData }));
-            localStorage.setItem(LOGGED_USER, JSON.stringify(userData));
-            setVariant('text-success-styled');
-            setMessageText(data.message);
-            setMessage(true);
-            setTimeout(() => {
-              setVariant('');
-              setMessageText('');
-              setMessage(false);
-            }, 2000);
-          }
+        if (res?.status === CREATED) {
+          const response = await res.json();
+          const userData: UserInterface = response.user;
+
+          dispatch(userInfoUpdated({ ...userData }));
+          localStorage.setItem(LOGGED_USER, JSON.stringify(userData));
+          setVariant('text-success-styled');
+          setMessageText(`Updated succefully`);
+          setMessage(true);
+          setTimeout(() => {
+            setVariant('');
+            setMessageText('');
+            setMessage(false);
+          }, 2000);
         }
       } catch (err) {
         console.log(`catch := ${err}`);
       }
     }
   };
-  console.log(user);
 
   const sliderCallBack = (min: number, max: number) => {
     console.log(`changing range from ${min} to ${max}`);
@@ -201,7 +197,7 @@ const Settings = () => {
         <Hr />
         <UpdateLink
           title="description"
-          value={user?.description}
+          value={user?.biography}
           symbol=">"
           link="#"
           setEvent={handleShow}
