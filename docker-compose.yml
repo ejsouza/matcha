@@ -1,12 +1,42 @@
-version: "3.3"
+version: "3.8"
 
 services:
+  postgres:
+    container_name: postgres
+    image: postgres
+    restart: always
+    volumes:
+      - ./api/data:/var/lib/postgresql/data
+      # - ./api/db:/docker-entrypoint-initdb.d/
+      # copy the sql script to create tables
+      - ./api/sql/create_tables.sql:/docker-entrypoint-initdb.d/create_tables.sql
+      # - ./src/migrations/dbinit.sql:/docker-entrypoint-initdb.d/dbinit.sql
+    ports:
+      - '5432:5432'
+    networks:
+      - matcha-network
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: matcha
+  
+  adminer:
+    container_name: adminer
+    depends_on:
+      - postgres
+    image: adminer
+    restart: always
+    ports:
+      - 8080:8080
+    networks:
+      - matcha-network
+
   api:
     container_name: api
     depends_on:
       - postgres
     restart: unless-stopped
-    # env_file: ./server/.env
+    env_file: ./api/.env
     build:
       context: ./api/
       dockerfile: Dockerfile
@@ -15,33 +45,18 @@ services:
     networks:
       - matcha-network
     volumes:
-      - ./:/api
+      - .:/api
+      - /api/node_modules
 
-  front:
-    container_name: front
-    build:
-      context: ./front/
-      dockerfile: Dockerfile
-    ports:
-      - "3000:3000"
+  # front:
+  #   container_name: front
+  #   build:
+  #     context: ./front/
+  #     dockerfile: Dockerfile
+  #   ports:
+  #     - "3000:3000"
   
-  postgres:
-    container_name: postgres
-    image: postgres:10.5
-    restart: unless-stopped
-    volumes:
-      - ./api/postgres-data:/var/lib/postgresql/data
-      # copy the sql script to create tables
-      # - ./sql/create_tables.sql:/docker-entrypoint-initdb.d/create_tables.sql
-      - ./src/migrations/dbinit.sql:/docker-entrypoint-initdb.d/dbinit.sql
-    ports:
-      - '5432:5432'
-    networks:
-      - matcha-network
-    environment:
-      POSTGRES_USER: matcha
-      POSTGRES_PASSWORD: matcha
-      POSTGRES_DB: matcha
+
 
 networks:
   matcha-network:
