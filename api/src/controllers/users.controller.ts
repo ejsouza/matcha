@@ -1,6 +1,7 @@
 import express from 'express';
 import userService from '../services/users.service';
 import debug from 'debug';
+import { MapUserDto } from '../dto/users/create.user.dto';
 
 const log: debug.IDebugger = debug('app:users-controller');
 
@@ -8,6 +9,12 @@ class UserController {
   async listUsers(req: express.Request, res: express.Response) {
     const users = await userService.list(100, 0);
     res.status(200).send(users);
+  }
+
+  async getMatchingUsers(req: express.Request, res: express.Response) {
+    const matches = await userService.match(req.body.userId);
+    const users = await MapUserDto(matches);
+    res.status(200).json({ users });
   }
 
   async getUserById(req: express.Request, res: express.Response) {
@@ -22,8 +29,6 @@ class UserController {
   }
 
   async patchUser(req: express.Request, res: express.Response) {
-    // const data = Object.entries(req.body).filter((val) => val[0] !== 'id');
-    // console.log(`payload  := ${data}`);
     const user = await userService.patchById(req.params.userId, req.body);
     res.status(201).json({ user });
   }

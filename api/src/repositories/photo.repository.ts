@@ -19,6 +19,11 @@ class PhotoRepository {
     return db.query(query, [id]);
   }
 
+  async updateDefaultPicture(userId: number, path: string) {
+    const query = 'UPDATE users SET default_picture=$1 WHERE id = $2';
+    return db.query(query, [path, userId]);
+  }
+
   async delete(id: number) {
     const query = 'DELETE FROM pictures WHERE id = $1';
     return db.query(query, [id]);

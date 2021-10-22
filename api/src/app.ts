@@ -9,8 +9,9 @@ import { UserRoutes } from './routes/users.routes.config';
 import { AuthRoutes } from './routes/auth.routes.config';
 import { PhotoRoutes } from './routes/photos.routes.config';
 import { TagRoutes } from './routes/tags.routes.config';
+import { LikeRoutes } from './routes/likes.routes.config';
+import { BlockUserRoutes } from './routes/blockUser.routes.config';
 import debug from 'debug';
-import db from '../db/';
 
 /**
  * We don’t need to import the 'dotenv' library elsewhere because importing it in app.ts
@@ -57,6 +58,8 @@ routes.push(new UserRoutes(app));
 routes.push(new AuthRoutes(app));
 routes.push(new PhotoRoutes(app));
 routes.push(new TagRoutes(app));
+routes.push(new LikeRoutes(app));
+routes.push(new BlockUserRoutes(app));
 
 // this is a simple route to make sure everything is working properly
 const runningMessage = `Server running at http://localhost:${PORT}`;

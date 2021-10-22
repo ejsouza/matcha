@@ -17,7 +17,7 @@ export class TagRoutes extends CommonRoutesConfig {
         usersMiddleware.validateUserIdIsInBody,
         tokenMiddleware.containValidJWT
       )
-      .get(tagController.list)
+      // .get(tagController.list)
       .post(tagController.create);
 
     this.app
@@ -28,7 +28,7 @@ export class TagRoutes extends CommonRoutesConfig {
     this.app
       .route('/tags/:userId/all')
       .all(usersMiddleware.validateUserExists, tokenMiddleware.containValidJWT)
-      .get(tagController.list);
+      .get(tagController.listAllUserAvailableTags);
     return this.app;
   }
 }

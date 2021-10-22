@@ -1,4 +1,4 @@
-DROP TABLE IF EXISTS users;
+-- DROP TABLE IF EXISTS users;
 CREATE TABLE  users (
   id SERIAL PRIMARY KEY,
 	username VARCHAR(128) NOT NULL UNIQUE,
@@ -13,7 +13,11 @@ CREATE TABLE  users (
 	localisation POINT,
 	activated BOOLEAN DEFAULT FALSE,
 	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-	updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+	updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+	default_picture VARCHAR(255),
+	is_connected INT DEFAULT 0,
+	popularity SMALLINT DEFAULT 0,
+	reported BOOLEAN DEFAULT FALSE
 );
 
 -- DROP TABLE IF EXISTS pictures;
@@ -29,4 +33,28 @@ CREATE TABLE tags (
 	id INT,
 	user_id SERIAL NOT NULL,
 	name VARCHAR(64)
-)
+);
+
+-- DROP TABLE IF EXISTS likes;
+CREATE TABLE likes (
+	user_id INT,
+	liked_id INT
+);
+
+-- DROP TABLE IF EXISTS dislikes;
+CREATE TABLE dislikes (
+	user_id INT,
+	disliked_id INT
+);
+
+-- DROP TABLE IF EXISTS reported_users;
+CREATE TABLE reported_users (
+	reporter_id INT,
+	reported_id INT
+);
+
+-- DROP TABLE IF EXISTS blocked_users;
+CREATE TABLE blocked_users (
+	blocker_id INT,
+	blocked_id INT
+);

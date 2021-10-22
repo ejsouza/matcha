@@ -55,7 +55,8 @@ export class PhotoRoutes extends CommonRoutesConfig {
         upload.single('uploaded_file'),
         photoMiddleware.photoMimetype,
         photoController.upload
-      );
+      )
+      .patch(tokenMiddleware.validJWTNeeded, photoController.update);
 
     this.app
       .route(`/photos/:id`)

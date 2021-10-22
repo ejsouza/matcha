@@ -7,8 +7,6 @@ import { SALT_ROUNDS } from '../../config/const';
 import { setLocation } from '../../utils/seeder/fake_location';
 import baseTags from '../../config/base.tags';
 import https from 'https';
-import { CreateUserDto } from '../../dto/users/create.user.dto';
-import usersService from '../../services/users.service';
 
 faker.locale = 'fr';
 
@@ -23,9 +21,9 @@ interface FakeFaceResponse {
 }
 
 const randTags = async (userId: number) => {
-  const base = [
-    1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
-    22, 23, 24, 25, 26, 27, 28, 29, 30,
+  let base = [
+    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+    21, 22, 23, 24, 25, 26, 27, 28,
   ];
 
   let random: number[] = [];
@@ -36,8 +34,8 @@ const randTags = async (userId: number) => {
 
   for (let x = 0; x < random.length; x++) {
     const tag: CreateTagDto = {
-      id: baseTags[x].id,
-      name: baseTags[x].name,
+      id: baseTags[random[x]].id,
+      name: baseTags[random[x]].name,
       user_id: userId,
     };
     await tagService.create(tag);
@@ -81,7 +79,6 @@ const createUserAccount = async () => {
       Math.floor(Math.random() * (30 - 5) + 5)
     );
     const birthdate = faker.date.between('1980-01-01', '2002-12-31');
-    const updated_at = faker.date.between(created_at, new Date());
     const gender = faker.random.arrayElement(genders); //7
     const firstname = faker.name.firstName(genders.indexOf(gender)); //2
     const lastname = faker.name.lastName(); //3
@@ -93,6 +90,7 @@ const createUserAccount = async () => {
     const sexual_orientation = faker.random.arrayElement(sexuality); //6
     const activated = true; //9
     const is_connected = Math.floor(Math.random() * 2); //14
+    const popularity = Math.floor(Math.random() * 10); //15
 
     const query = `INSERT INTO users(
 			username,
@@ -107,9 +105,10 @@ const createUserAccount = async () => {
 			localisation,
 			created_at,
 			birthdate,
-      is_connected
+      is_connected,
+      popularity
 			)
-			VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, POINT($10, $11), $12, $13, $14)`;
+			VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, POINT($10, $11), $12, $13, $14, $15)`;
 
     await db.query(query, [
       username,
@@ -126,6 +125,7 @@ const createUserAccount = async () => {
       created_at,
       birthdate,
       is_connected,
+      popularity,
     ]);
     console.log(`created user ${i}...`);
 
@@ -150,14 +150,6 @@ const createUserAccount = async () => {
     );
 
     randTags(i);
-    // for (let x = 0; x < randomTags.length; x++) {
-    //   const tag: CreateTagDto = {
-    //     id: baseTags[x].id,
-    //     name: baseTags[x].name,
-    //     user_id: i,
-    //   };
-    //   await tagService.create(tag);
-    // }
   }
 };
 

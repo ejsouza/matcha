@@ -3,7 +3,15 @@ import tagRepository from '../repositories/tag.repository';
 import { CreateTagDto } from '../dto/tags/create.tag.dto';
 
 class TagService {
-  async list(userId: string) {
+  /**
+   *
+   * @param userId (in the body)
+   * @returns tags []
+   * @comment This function will grab from the array that contains
+   * @comment the base tags, check the users tags and send all the
+   * @comment tags that user doens't yet have
+   */
+  async listAllUserAvailableTags(userId: string) {
     const res = await tagRepository.getUserTags(Number(userId));
     const userTags = res.rows as CreateTagDto[];
 

@@ -31,6 +31,19 @@ class PhotoController {
     return res.status(200).json({ picture });
   }
 
+  async update(req: express.Request, res: express.Response) {
+    const userId = retrieveUserIdFromToken(req);
+    const path = req.body.file_path;
+    const count = await photosService.updateDefaultPicture(
+      Number(userId),
+      path
+    );
+
+    return res
+      .status(201)
+      .json({ success: true, message: `file uploaded ${count}` });
+  }
+
   async delete(req: express.Request, res: express.Response) {
     const response = await photosService.delete(req.params.id);
     return res.status(200).json({ message: `File ${response}` });

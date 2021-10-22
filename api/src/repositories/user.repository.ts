@@ -30,6 +30,10 @@ class UserRepository {
     return db.query(query, []);
   }
 
+  async match(query: string) {
+    return db.query(query, []);
+  }
+
   async getUserById(userId: string) {
     const query = 'SELECT * FROM users WHERE id = $1';
     return db.query(query, [userId]);
@@ -94,15 +98,28 @@ class UserRepository {
   }
 
   async patchUserCoordinates(userId: string, coordinates: PatchUserDto) {
-    const query = `UPDATE users SET localisation=POINT($1, $2) WHERE id=${userId} RETURNING *`;
+    const query = `UPDATE users SET localisation=POINT($1, $2) WHERE id=$3 RETURNING *`;
 
-    console.log(`userRepository patchUserCoordinates(${coordinates.localisation?.x}, ${coordinates.localisation?.y})`);
+    console.log(
+      `userRepository patchUserCoordinates(${coordinates.localisation?.x}, ${coordinates.localisation?.y})`
+    );
     const values = [
       coordinates.localisation?.x,
       coordinates.localisation?.y,
+      userId,
     ];
 
     return db.query(query, values);
+  }
+
+  async increaseUserPopularity(userId: number, popularity: number) {
+    const query = 'UPDATE users SET popularity=$1 WHERE id=$2';
+    return db.query(query, [popularity, userId]);
+  }
+
+  async decreaseUserPopularity(userId: number, popularity: number) {
+    const query = 'UPDATE users SET popularity=$1 WHERE id=$2';
+    return db.query(query, [popularity, userId]);
   }
 
   async deleteUser(userId: string) {

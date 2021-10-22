@@ -9,7 +9,7 @@ const log: debug.IDebugger = debug('app:auth-controller');
 class AuthController {
   async createJWT(req: express.Request, res: express.Response) {
     try {
-      const user = await usersService.getUserWithoutPassword(req.body.username);
+      const user = await usersService.getUserByUsername(req.body.username);
       const token = jwt.sign({ userId: user.id }, SECRET_TOKEN, {
         expiresIn: EXPIRES_IN,
       });

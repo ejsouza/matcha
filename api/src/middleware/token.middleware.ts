@@ -89,6 +89,23 @@ class TokenMiddleware {
       return res.status(401).send({ error: 'Missing authorization token' });
     }
   }
+
+  /**
+   *  This function should only be called after
+   *  one that checks for a valid token.
+   *  No check will be made here.
+   */
+  async extractUserIdFromToken(
+    req: express.Request,
+    res: express.Response,
+    next: express.NextFunction
+  ) {
+    const authorization = req.headers['authorization']?.split(' ');
+    const decoded = jwt.decode(authorization![1]);
+    const userId = (decoded as any).userId;
+    req.body.userId = userId;
+    next();
+  }
 }
 
 export default new TokenMiddleware();

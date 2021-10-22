@@ -1,5 +1,7 @@
 import { CRUD } from '../common/interfaces/crud.interface';
 import photoRepository from '../repositories/photo.repository';
+import usersService from '../services/users.service';
+import userService from '../services/users.service';
 
 interface Resource {
   userId: number;
@@ -9,6 +11,13 @@ interface Resource {
 class PhotoService implements CRUD {
   async create(ressource: Resource) {
     const res = await photoRepository.upload(ressource.userId, ressource.path);
+    /**
+     * Set first photo as default if default_picture is null
+     */
+    const user = await usersService.getById(ressource.userId.toString());
+    if (user && !user.default_picture) {
+      await this.updateDefaultPicture(ressource.userId, ressource.path);
+    }
     return res;
   }
 
@@ -20,6 +29,11 @@ class PhotoService implements CRUD {
   async getById(id: string) {
     const res = await photoRepository.getById(Number(id));
     return res.rows[0];
+  }
+
+  async updateDefaultPicture(userId: number, path: string) {
+    const res = await photoRepository.updateDefaultPicture(userId, path);
+    return res.rowCount;
   }
 
   async patchById() {}

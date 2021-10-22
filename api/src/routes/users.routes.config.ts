@@ -12,7 +12,12 @@ export class UserRoutes extends CommonRoutesConfig {
   configureRoutes() {
     this.app
       .route(`/users`)
-      .get(userController.listUsers)
+      .get(
+        tokenMiddleware.containValidJWT,
+        tokenMiddleware.extractUserIdFromToken,
+        userMiddleware.extractUserId,
+        userController.getMatchingUsers
+      )
       .post(
         userMiddleware.validateRequiredUserBodyFields,
         userMiddleware.validateSameEmailDoesntExist,

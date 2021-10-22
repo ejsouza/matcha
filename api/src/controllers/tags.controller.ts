@@ -5,9 +5,8 @@ import tagService from '../services/tags.service';
 import baseTags from '../config/base.tags';
 
 class TagController {
-  async list(req: express.Request, res: express.Response) {
-    const tags = await tagService.list(req.params.userId);
-
+  async listAllUserAvailableTags(req: express.Request, res: express.Response) {
+    const tags = await tagService.listAllUserAvailableTags(req.params.userId);
     return res.status(200).json({ tags });
   }
 

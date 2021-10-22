@@ -1,11 +1,15 @@
 import bcrypt from 'bcrypt';
 import { CRUD } from '../common/interfaces/crud.interface';
 import { CreateUserDto } from '../dto/users/create.user.dto';
-import { PublicUserDto } from '../dto/users/public.user.dto';
-import { PutUserDto } from '../dto/users/put.user.dto';
 import { PatchUserDto } from '../dto/users/patch.user.dto';
 import userRepository from '../repositories/user.repository';
 import { SALT_ROUNDS } from '../config/const';
+
+enum SexualOrientation {
+  Straight = 'straight',
+  Bisexual = 'bisexual',
+  Gay = 'gay',
+}
 
 class UserService implements CRUD {
   async create(resource: CreateUserDto) {
@@ -30,6 +34,90 @@ class UserService implements CRUD {
       user.password = '';
     });
     return users;
+  }
+
+  async match(requester: string) {
+    const userRes = await userRepository.getUserById(requester);
+    const user: CreateUserDto = userRes.rows[0];
+    let query = '';
+    if (!user) {
+      return [];
+    }
+    //SELECT *, file_path FROM users JOIN pictures ON users.id = user_id;
+    if (user.gender === 'female') {
+      switch (user.sexual_orientation) {
+        case SexualOrientation.Straight:
+          query = `SELECT * FROM users WHERE gender='male'`;
+          break;
+        case SexualOrientation.Gay:
+          query = `SELECT *, file_path FROM users WHERE gender='female'`;
+          break;
+        default:
+          query = `SELECT * FROM users`;
+          break;
+      }
+    } else {
+      switch (user.sexual_orientation) {
+        case SexualOrientation.Straight:
+          query = `SELECT * FROM users WHERE gender='female'`;
+          break;
+        case SexualOrientation.Gay:
+          query = `SELECT *, file_path FROM users WHERE gender='male'`;
+          break;
+        default:
+          query = `SELECT * FROM users`;
+          break;
+      }
+    }
+    const res = await userRepository.match(query);
+    const rawUsers: CreateUserDto[] = res.rows;
+    let matches: CreateUserDto[] = [];
+    if (user.gender === 'female') {
+      switch (user.sexual_orientation) {
+        case SexualOrientation.Straight:
+          matches = rawUsers.filter(
+            (user) => user.sexual_orientation !== SexualOrientation.Gay
+          );
+          break;
+        case SexualOrientation.Gay:
+          matches = rawUsers.filter(
+            (user) => user.sexual_orientation !== SexualOrientation.Straight
+          );
+          break;
+        default:
+          matches = rawUsers.filter(
+            (user) =>
+              (user.gender === 'male' &&
+                user.sexual_orientation !== SexualOrientation.Gay) ||
+              (user.gender === 'female' &&
+                user.sexual_orientation !== SexualOrientation.Straight)
+          );
+          break;
+      }
+    } else {
+      switch (user.sexual_orientation) {
+        case SexualOrientation.Straight:
+          matches = rawUsers.filter(
+            (user) => user.sexual_orientation !== SexualOrientation.Gay
+          );
+          break;
+        case SexualOrientation.Gay:
+          matches = rawUsers.filter(
+            (user) => user.sexual_orientation !== SexualOrientation.Straight
+          );
+          break;
+        default:
+          matches = rawUsers.filter(
+            (user) =>
+              (user.gender === 'female' &&
+                user.sexual_orientation !== SexualOrientation.Gay) ||
+              (user.gender === 'male' &&
+                user.sexual_orientation !== SexualOrientation.Straight)
+          );
+          break;
+      }
+    }
+    return matches;
   }
 
   async getById(id: string) {
@@ -77,6 +165,26 @@ class UserService implements CRUD {
       user.password = '';
     }
     return user;
+  }
+
+  async increaseUserPopularity(userId: number) {
+    const user = await this.getById(userId.toString());
+    let popularity = 1;
+    if (user.popularity) {
+      popularity += user.popularity;
+    }
+    const res = await userRepository.increaseUserPopularity(userId, popularity);
+    return res.rowCount;
+  }
+
+  async decreaseUserPopularity(userId: number) {
+    const user = await this.getById(userId.toString());
+    let popularity = 0;
+    if (user.popularity) {
+      popularity += user.popularity - 1;
+    }
+    const res = await userRepository.decreaseUserPopularity(userId, popularity);
+    return res.rowCount;
   }
 }
 
