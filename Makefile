@@ -12,4 +12,6 @@ stop:
 
 clean:
 	docker rmi -f matcha_api
-	# rm -rf ./api/data
+prune:
+	docker rmi -f matcha_api
+	rm -rf ./api/data
