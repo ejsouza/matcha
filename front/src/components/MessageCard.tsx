@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Card, FloatingLabel, Form, Alert } from 'react-bootstrap';
-import Button from './Button';
 import { StyledButtonWhite } from './Deck';
 import { FlexBox, Gap } from 'globalStyled';
 import styled from 'styled-components';
