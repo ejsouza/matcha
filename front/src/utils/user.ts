@@ -49,11 +49,9 @@ const getUserIdFromLocalStorage = () => {
   const currentUser = localStorage.getItem(LOGGED_USER);
 
   if (!currentUser) {
-    console.log(`getUserIdFromLocalStorage(ERROR)`);
     return undefined;
   }
   const user: UpdateUserInfoInterface = JSON.parse(currentUser);
-  console.log(`getUserIdFromLocalStorage(${user.id})`);
   return user.id;
 };
 
@@ -98,6 +96,41 @@ const calculateAge = (birthDate: string) => {
   return age;
 };
 
+const popularity = (score: number | undefined) => {
+  if (!score) {
+    return `Not very popular (${score})`;
+  }
+  const zeros = score > 0 ? '00' : '';
+  if (score > 9) {
+    return `Very popular (${score}${zeros})`;
+  } else if (score > 5) {
+    return `Popular (${score}${zeros})`;
+  } else if (score > 3) {
+    return `Getting attention (${score}${zeros})`;
+  } else if (score >= 0) {
+    return `Not very popular (${score}${zeros})`;
+  } else {
+    return `Hated`;
+  }
+};
+
+const dateToStringFormat = (date: string) => {
+  if (!date) {
+    const today = new Date();
+    today.setMinutes(today.getMinutes() - Math.floor(Math.random() * 10));
+    return new Date(today).toLocaleString();
+  } else {
+    return new Date(date).toLocaleString();
+  }
+};
+
+const capitalize = (word: string) => {
+  if (!word) {
+    return '';
+  }
+  return word.charAt(0).toUpperCase() + word.slice(1);
+};
+
 export {
   lookingFor,
   aHundredLengthBio,
@@ -105,4 +138,7 @@ export {
   getUserIdFromLocalStorage,
   getUserCity,
   calculateAge,
+  popularity,
+  dateToStringFormat,
+  capitalize,
 };
