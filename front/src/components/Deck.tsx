@@ -10,7 +10,7 @@ import DislikeButton from './DislikeButton';
 import { getUsers, UpdateUserInfoInterface } from 'api/user';
 import { CREATED, SUCCESS } from 'utils/const';
 import { aHundredLengthBio } from 'utils/user';
-import { likeProfile, getLikedUserLikes, dislikeProfile } from 'api/like';
+import { likeProfile, getLikesByUserId, dislikeProfile } from 'api/like';
 import { UserInterface } from 'interfaces';
 import { FlexBox, Gap } from 'globalStyled';
 import Button from './Button';
@@ -180,7 +180,7 @@ const Deck = () => {
       if (currentUserCard.id) {
         const res = await dislikeProfile(currentUserCard.id);
         if (res.status !== CREATED) {
-          console.log(`Dislike failed...`);
+          console.log(`Dislike failed...[${res.status}]`);
         } else {
           console.log(`You disliked := ${currentUserCard.username}`);
         }
@@ -192,7 +192,7 @@ const Deck = () => {
       if (currentUserCard.id) {
         const res = await likeProfile(currentUserCard.id);
         if (res.status === CREATED) {
-          const resLikes = await getLikedUserLikes(currentUserCard.id);
+          const resLikes = await getLikesByUserId(currentUserCard.id);
           const userCard = await resLikes.json();
           const likes: LikesInterface[] = userCard.likes;
           const isMatch = likes.find(
@@ -273,6 +273,9 @@ const Deck = () => {
       };
     });
   };
+  const callMe = (index: number) => {
+    console.log(`you called me from Deck(${index})`);
+  };
   // Now we're just mapping the animated values to our view, that's it. Btw, this component only renders once. :-)
   return (
     <>
@@ -308,7 +311,7 @@ const Deck = () => {
                   <DislikeButton />
                 </ButtonItem>
                 <ButtonItem>
-                  <InfoButton user={users[i]} />
+                  <InfoButton user={users[i]} cb={dislike} index={i} />
                 </ButtonItem>
                 <ButtonItem onClick={() => like(i)}>
                   <LikeButton />
