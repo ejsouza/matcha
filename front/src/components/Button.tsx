@@ -33,15 +33,24 @@ interface IProps {
   text: string;
   wid?: string;
   borderRadius?: string;
+  margin?: string;
+  padd?: string;
   callBack?: () => void;
 }
 
-const Button = ({ text, wid, borderRadius, callBack }: IProps) => {
+const Button = ({
+  text,
+  wid,
+  borderRadius,
+  margin,
+  padd,
+  callBack,
+}: IProps) => {
   return (
     <>
       <StyledButton
-        margin="3vh 0 0 0"
-        padding="8px 8px"
+        margin={margin ? margin : '3vh 0 0 0'}
+        padding={padd ? padd : '8px 8px'}
         width={wid ? wid : '100%'}
         borderRadius={borderRadius ? borderRadius : '4px'}
         onClick={callBack}
