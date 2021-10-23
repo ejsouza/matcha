@@ -65,12 +65,11 @@ const getAllLikes = async () => {
  *
  * @param likedId
  * @returns likes []
- * @description this function returns all the people the liked user
- * @description has liked to check if is a match with the current user
+ * @description this function returns all the likes a given user has got
  */
-const getLikedUserLikes = async (likedId: number) => {
+const getLikesByUserId = async (userId: number) => {
   try {
-    const res = await fetch(`${API_BASE_URL}/likes/${likedId}`, {
+    const res = await fetch(`${API_BASE_URL}/likes/${userId}`, {
       method: 'GET',
       mode: 'cors',
       headers: {
@@ -85,4 +84,5 @@ const getLikedUserLikes = async (likedId: number) => {
   }
 };
 
-export { likeProfile, dislikeProfile, getAllLikes, getLikedUserLikes };
+
+export { likeProfile, dislikeProfile, getAllLikes, getLikesByUserId };
