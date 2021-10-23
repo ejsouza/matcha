@@ -1,3 +1,4 @@
+import { get } from 'http';
 import { API_BASE_URL } from 'utils/config';
 import {
   getUserTokenFromLocalStorage,
@@ -38,6 +39,9 @@ export interface UpdateUserInfoInterface {
   }[];
   age?: number;
   default_picture?: string;
+  popularity?: number;
+  is_connected?: number;
+  updated_at?: string;
 }
 
 const updateUserInfo = async (user: UpdateUserInfoInterface) => {
@@ -139,10 +143,54 @@ const getUsers = async () => {
   }
 };
 
+const reportUser = async (reportedId: number) => {
+  try {
+    const res = await fetch(`${API_BASE_URL}/report`, {
+      method: 'POST',
+      mode: 'cors',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${getUserTokenFromLocalStorage()}`,
+      },
+      body: JSON.stringify({
+        reporter_id: getUserIdFromLocalStorage(),
+        reported_id: reportedId,
+      }),
+    });
+    return res;
+  } catch (err) {
+    console.log(`[catch error reportUser()] ${err}`);
+    throw err;
+  }
+};
+
+const blockUser = async (blockedId: number) => {
+  try {
+    const res = await fetch(`${API_BASE_URL}/block`, {
+      method: 'POST',
+      mode: 'cors',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${getUserTokenFromLocalStorage()}`,
+      },
+      body: JSON.stringify({
+        blocker_id: getUserIdFromLocalStorage(),
+        blocked_id: blockedId,
+      }),
+    });
+    return res;
+  } catch (err) {
+    console.log(`[catch error blockUser()] ${err}`);
+    throw err;
+  }
+};
+
 export {
   getUser,
   getUserById,
   getUsers,
   updateUserInfo,
   updateUserCoordinates,
+  reportUser,
+  blockUser,
 };
