@@ -11,7 +11,8 @@ import {
 } from 'utils/user';
 import { reportUser, blockUser } from 'api/user';
 import { getLikesByUserId } from 'api/like';
-import { FlexBox } from 'globalStyled';
+import { visitUserProfile } from 'api/visit';
+import { FlexBox, Gap } from 'globalStyled';
 import { Wrapper } from './LikeButton';
 import Button from './Button';
 import styled from 'styled-components';
@@ -37,6 +38,7 @@ const ProfileWrapper = styled.div`
 `;
 
 const ProfileInfo = styled.div`
+  position: relative;
   width: 382px;
   height: 500px;
   padding: 8px 8px;
@@ -47,8 +49,16 @@ const StyledTags = styled.span`
   letter-spacing: 0.1em;
 `;
 
-const ButtonWarapper = styled.div`
-  position: relative;
+const ButtonReportWarapper = styled.div`
+  width: 100%;
+  position: absolute;
+  bottom: 40px;
+`;
+
+const ButtonBlockWarapper = styled.div`
+  width: 100%;
+  position: absolute;
+  bottom: 0;
 `;
 
 const TagsGridContainer = styled.div`
@@ -68,6 +78,7 @@ interface InfoButtonProps {
   user: UpdateUserInfoInterface;
   cb: (i: number) => void;
   index: number;
+  currentUserId: number;
 }
 
 interface LikesInterface {
@@ -81,24 +92,38 @@ const InfoButton = (props: InfoButtonProps) => {
   const [userCity, setUserCity] = useState('');
   const [birthDate, setBirthDate] = useState('');
   const [likedUsers, setLikedUsers] = useState<LikesInterface[]>([]);
+  const [likesCurrentUser, setLikesCurrentUser] = useState(false);
 
   useEffect(() => {
     if (props.user.id) {
       getLikesByUserId(props.user.id).then((res) => {
         res.json().then((data) => {
           const likes: LikesInterface[] = data.likes;
-          if (likes.length) {
-            setLikedUsers(likes);
-            console.log(`likes := ${likes[0].liked_id}`);
+          const alreadyLiked = likes.find(
+            (like) => like.liked_id === props.currentUserId
+          );
+          if (alreadyLiked) {
+            setLikesCurrentUser(true);
+            console.log(`likes := ${likes[0].liked_id} -- ${alreadyLiked}`);
           }
         });
       });
     }
   }, []);
 
-  const handleClose = () => {
+  const handleClose = async () => {
     setShow(false);
     setProfile(undefined);
+    console.log('visited profile');
+    if (props.user.id) {
+      const visited = await visitUserProfile(
+        props.user.id,
+        props.currentUserId
+      );
+      if (visited.status === CREATED) {
+        console.log('Visit added');
+      }
+    }
   };
   const handleShow = () => setShow(true);
 
@@ -315,41 +340,46 @@ const InfoButton = (props: InfoButtonProps) => {
                     {/************  end last seen ************/}
 
                     {/************  start liked you ************/}
-                    <TagsItem marginBottom="8px">
-                      <svg
-                        width="24"
-                        height="24"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          id="liked"
-                          fillRule="evenodd"
-                          clipRule="evenodd"
-                          d="M5.74237 0.054479C1.99061 0.601239 -0.59084 4.35505 0.117043 8.2347C0.580494 10.7748 2.4035 13.9794 5.48348 17.6679C6.69777 19.1222 8.81303 21.4088 10.0851 22.6424C11.9354 24.4368 12.0058 24.4385 13.7761 22.7299C17.9723 18.6797 21.3482 14.3987 22.8374 11.239C24.2663 8.20714 24.368 6.0797 23.1981 3.68776C22.6991 2.66765 21.6522 1.51598 20.7439 0.988063C18.6356 -0.2373 16.3656 -0.324717 14.3322 0.74116C13.6106 1.11946 13.3591 1.30282 12.7239 1.91384C12.358 2.26584 12.1668 2.38638 11.9745 2.38638C11.7823 2.38638 11.5911 2.26584 11.2252 1.91384C10.5878 1.30066 10.3402 1.12062 9.59543 0.728505C8.48236 0.142524 6.96273 -0.123317 5.74237 0.054479ZM7.98853 0.87785C8.21953 0.929277 8.66228 1.07844 8.97242 1.20921C9.49045 1.42775 9.53622 1.46886 9.53622 1.71477C9.53622 1.95486 9.5097 1.98133 9.27956 1.97155C9.13839 1.96563 8.73415 1.84922 8.38123 1.71298C7.20613 1.25947 5.68736 1.31179 4.56736 1.84455C2.71278 2.72671 1.53204 4.42757 1.32525 6.5149C1.16886 8.09334 1.93321 10.2194 3.59537 12.8293C4.79699 14.716 6.09101 16.3612 8.3536 18.8787C9.43647 20.0835 9.57336 20.2695 9.4931 20.4269C9.44297 20.5252 9.33046 20.6057 9.2432 20.6057C9.15054 20.6057 8.52659 20.003 7.74427 19.1577C4.24713 15.3792 1.8515 11.7642 0.971737 8.93816C0.760416 8.25929 0.734066 8.04191 0.732355 6.96365C0.730558 5.86798 0.753144 5.68336 0.968144 5.03402C1.86468 2.32624 4.3533 0.545594 6.96957 0.739814C7.29896 0.764316 7.75745 0.826423 7.98853 0.87785ZM12.8885 4.14405C13.2137 4.35882 13.5121 4.8555 13.5632 5.26656C13.6001 5.56372 13.5469 5.88288 13.3496 6.54838C13.205 7.03572 13.0868 7.46993 13.0868 7.51319C13.0868 7.55645 14.0475 7.5919 15.2216 7.5919C16.5744 7.5919 17.4311 7.62763 17.5603 7.68928C17.8273 7.817 18.0489 8.2207 18.0489 8.57952C18.0489 8.92847 17.5733 9.47523 17.2661 9.47936C17.0883 9.48178 17.0824 9.49273 17.2148 9.5736C17.4057 9.69027 17.6213 10.1248 17.6208 10.3921C17.6203 10.7433 17.3185 11.1543 16.9734 11.2738C16.7128 11.364 16.6803 11.3993 16.7957 11.467C17.035 11.6075 17.2139 12.0713 17.1552 12.399C17.0918 12.7539 16.6731 13.1564 16.3675 13.1564H16.1536L16.4106 13.3832C16.7331 13.668 16.814 14.0277 16.6488 14.4426C16.4204 15.0162 16.2936 15.0413 13.6258 15.0403C11.2716 15.0395 11.2426 15.0372 10.7897 14.8159C10.4979 14.6735 10.1799 14.5924 9.91275 14.5924C9.53537 14.5924 9.49328 14.6126 9.49216 14.7944C9.48874 15.3122 9.22421 15.4002 7.67121 15.4002C6.46514 15.4002 6.3315 15.3841 6.12557 15.2141L5.90014 15.0282V11.4546C5.90014 8.07036 5.90878 7.86986 6.06363 7.66918C6.22379 7.4615 6.2563 7.45728 7.68002 7.45728C8.98876 7.45728 9.15088 7.47424 9.31327 7.62825C9.41602 7.72581 9.49345 7.9089 9.49345 8.05457C9.49345 8.37318 9.57763 8.37507 9.92952 8.06444C10.4189 7.63238 11.6752 5.39445 11.9703 4.42892C12.1291 3.90926 12.4042 3.82391 12.8885 4.14405ZM10.4866 21.1957C10.5539 21.4772 10.4362 21.6182 10.1673 21.5782C9.80213 21.5237 9.84687 20.9647 10.2164 20.9647C10.3759 20.9647 10.4455 21.0242 10.4866 21.1957Z"
-                          fill="url(#paint0_linear_1:5)"
-                        />
-                        <defs>
-                          <linearGradient
-                            id="paint0_linear_1:5"
-                            x1="10.5233"
-                            y1="-1.07701"
-                            x2="11.5588"
-                            y2="30.7814"
-                            gradientUnits="userSpaceOnUse"
+                    {likesCurrentUser && (
+                      <>
+                        <TagsItem marginBottom="8px">
+                          <svg
+                            width="24"
+                            height="24"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
                           >
-                            <stop offset="0.0952381" stopColor="#FD297B" />
-                            <stop
-                              offset="0.561129"
-                              stopColor="#FF655B"
-                              stopOpacity="0.59"
+                            <path
+                              id="liked"
+                              fillRule="evenodd"
+                              clipRule="evenodd"
+                              d="M5.74237 0.054479C1.99061 0.601239 -0.59084 4.35505 0.117043 8.2347C0.580494 10.7748 2.4035 13.9794 5.48348 17.6679C6.69777 19.1222 8.81303 21.4088 10.0851 22.6424C11.9354 24.4368 12.0058 24.4385 13.7761 22.7299C17.9723 18.6797 21.3482 14.3987 22.8374 11.239C24.2663 8.20714 24.368 6.0797 23.1981 3.68776C22.6991 2.66765 21.6522 1.51598 20.7439 0.988063C18.6356 -0.2373 16.3656 -0.324717 14.3322 0.74116C13.6106 1.11946 13.3591 1.30282 12.7239 1.91384C12.358 2.26584 12.1668 2.38638 11.9745 2.38638C11.7823 2.38638 11.5911 2.26584 11.2252 1.91384C10.5878 1.30066 10.3402 1.12062 9.59543 0.728505C8.48236 0.142524 6.96273 -0.123317 5.74237 0.054479ZM7.98853 0.87785C8.21953 0.929277 8.66228 1.07844 8.97242 1.20921C9.49045 1.42775 9.53622 1.46886 9.53622 1.71477C9.53622 1.95486 9.5097 1.98133 9.27956 1.97155C9.13839 1.96563 8.73415 1.84922 8.38123 1.71298C7.20613 1.25947 5.68736 1.31179 4.56736 1.84455C2.71278 2.72671 1.53204 4.42757 1.32525 6.5149C1.16886 8.09334 1.93321 10.2194 3.59537 12.8293C4.79699 14.716 6.09101 16.3612 8.3536 18.8787C9.43647 20.0835 9.57336 20.2695 9.4931 20.4269C9.44297 20.5252 9.33046 20.6057 9.2432 20.6057C9.15054 20.6057 8.52659 20.003 7.74427 19.1577C4.24713 15.3792 1.8515 11.7642 0.971737 8.93816C0.760416 8.25929 0.734066 8.04191 0.732355 6.96365C0.730558 5.86798 0.753144 5.68336 0.968144 5.03402C1.86468 2.32624 4.3533 0.545594 6.96957 0.739814C7.29896 0.764316 7.75745 0.826423 7.98853 0.87785ZM12.8885 4.14405C13.2137 4.35882 13.5121 4.8555 13.5632 5.26656C13.6001 5.56372 13.5469 5.88288 13.3496 6.54838C13.205 7.03572 13.0868 7.46993 13.0868 7.51319C13.0868 7.55645 14.0475 7.5919 15.2216 7.5919C16.5744 7.5919 17.4311 7.62763 17.5603 7.68928C17.8273 7.817 18.0489 8.2207 18.0489 8.57952C18.0489 8.92847 17.5733 9.47523 17.2661 9.47936C17.0883 9.48178 17.0824 9.49273 17.2148 9.5736C17.4057 9.69027 17.6213 10.1248 17.6208 10.3921C17.6203 10.7433 17.3185 11.1543 16.9734 11.2738C16.7128 11.364 16.6803 11.3993 16.7957 11.467C17.035 11.6075 17.2139 12.0713 17.1552 12.399C17.0918 12.7539 16.6731 13.1564 16.3675 13.1564H16.1536L16.4106 13.3832C16.7331 13.668 16.814 14.0277 16.6488 14.4426C16.4204 15.0162 16.2936 15.0413 13.6258 15.0403C11.2716 15.0395 11.2426 15.0372 10.7897 14.8159C10.4979 14.6735 10.1799 14.5924 9.91275 14.5924C9.53537 14.5924 9.49328 14.6126 9.49216 14.7944C9.48874 15.3122 9.22421 15.4002 7.67121 15.4002C6.46514 15.4002 6.3315 15.3841 6.12557 15.2141L5.90014 15.0282V11.4546C5.90014 8.07036 5.90878 7.86986 6.06363 7.66918C6.22379 7.4615 6.2563 7.45728 7.68002 7.45728C8.98876 7.45728 9.15088 7.47424 9.31327 7.62825C9.41602 7.72581 9.49345 7.9089 9.49345 8.05457C9.49345 8.37318 9.57763 8.37507 9.92952 8.06444C10.4189 7.63238 11.6752 5.39445 11.9703 4.42892C12.1291 3.90926 12.4042 3.82391 12.8885 4.14405ZM10.4866 21.1957C10.5539 21.4772 10.4362 21.6182 10.1673 21.5782C9.80213 21.5237 9.84687 20.9647 10.2164 20.9647C10.3759 20.9647 10.4455 21.0242 10.4866 21.1957Z"
+                              fill="url(#paint0_linear_1:5)"
                             />
-                          </linearGradient>
-                        </defs>
-                      </svg>
-                    </TagsItem>
-                    <TagsItem>Liked you</TagsItem>
+                            <defs>
+                              <linearGradient
+                                id="paint0_linear_1:5"
+                                x1="10.5233"
+                                y1="-1.07701"
+                                x2="11.5588"
+                                y2="30.7814"
+                                gradientUnits="userSpaceOnUse"
+                              >
+                                <stop offset="0.0952381" stopColor="#FD297B" />
+                                <stop
+                                  offset="0.561129"
+                                  stopColor="#FF655B"
+                                  stopOpacity="0.59"
+                                />
+                              </linearGradient>
+                            </defs>
+                          </svg>
+                        </TagsItem>
+                        <TagsItem>Liked you</TagsItem>
+                      </>
+                    )}
+
                     {/************  end liked you ************/}
 
                     {/************  start biography ************/}
@@ -363,26 +393,29 @@ const InfoButton = (props: InfoButtonProps) => {
                     <TagsItem>
                       <img src={tagIcon} alt="tagIcon" width="28" height="18" />
                     </TagsItem>
-                    <TagsItem marginBottom="16px">
+                    <TagsItem marginBottom="14px">
                       {profile.tags?.map((tag) => (
                         <StyledTags key={tag.id}> #{tag.name}</StyledTags>
                       ))}
                     </TagsItem>
                     {/************  end tags ************/}
                   </TagsGridContainer>
-                  <ButtonWarapper>
+                  {/* <Gap>&nbsp;</Gap>
+                  {!likesCurrentUser && <Gap>&nbsp;</Gap>} */}
+                  <ButtonReportWarapper>
                     <Button
                       text="Report"
                       margin="0 0 8px 0"
                       callBack={handleReportUser}
                     />
-
+                  </ButtonReportWarapper>
+                  <ButtonBlockWarapper>
                     <Button
                       text="Block"
                       margin="0 0 0 0"
                       callBack={handleBlockUser}
                     />
-                  </ButtonWarapper>
+                  </ButtonBlockWarapper>
                 </ProfileInfo>
               </FlexBox>
             </ProfileWrapper>
