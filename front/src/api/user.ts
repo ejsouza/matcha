@@ -116,12 +116,29 @@ const getUserById = async (id: number) => {
         Authorization: `Bearer ${getUserTokenFromLocalStorage()}`,
       },
     });
-    if (!res.ok) {
-      throw new Error(res.statusText);
-    }
     return res;
   } catch (err) {
     console.log(`[catch error getUserById()] ${err}`);
+    throw err;
+  }
+};
+
+const getUserMatches = async () => {
+  try {
+    const res = await fetch(
+      `${API_BASE_URL}/users/${getUserIdFromLocalStorage()}/matches`,
+      {
+        method: 'GET',
+        mode: 'cors',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${getUserTokenFromLocalStorage()}`,
+        },
+      }
+    );
+    return res;
+  } catch (err) {
+    console.log(`[catch error getUserMatches()] ${err}`);
     throw err;
   }
 };
@@ -189,6 +206,7 @@ export {
   getUser,
   getUserById,
   getUsers,
+  getUserMatches,
   updateUserInfo,
   updateUserCoordinates,
   reportUser,

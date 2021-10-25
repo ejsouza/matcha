@@ -311,7 +311,12 @@ const Deck = () => {
                   <DislikeButton />
                 </ButtonItem>
                 <ButtonItem>
-                  <InfoButton user={users[i]} cb={dislike} index={i} />
+                  <InfoButton
+                    user={users[i]}
+                    cb={dislike}
+                    index={i}
+                    currentUserId={currentUser.id}
+                  />
                 </ButtonItem>
                 <ButtonItem onClick={() => like(i)}>
                   <LikeButton />

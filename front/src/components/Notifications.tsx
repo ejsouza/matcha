@@ -4,7 +4,10 @@ import styled from 'styled-components';
 import Bell from './Bell';
 import Loading from './Loading';
 import { getVisits } from 'api/visit';
+import { getUserMatches, UpdateUserInfoInterface } from 'api/user';
 import VisitCard from './VisitCard';
+import MatchesCard from './MatchesCard';
+import { SUCCESS } from 'utils/const';
 
 const Container = styled.div`
   padding-left: 16px;
@@ -35,7 +38,7 @@ const WrapTitle = styled.div`
 
 const Wrapper = styled.div`
   position: relative;
-  padding-top: 50px;
+  padding-top: 100px;
 
   h6 {
     text-align: center;
@@ -44,6 +47,7 @@ const Wrapper = styled.div`
 
 const ActiveTitle = styled.div`
   color: var(--primary-color);
+  margin-top: 40px;
 `;
 
 export interface VisitInterface {
@@ -57,6 +61,7 @@ export interface VisitInterface {
 const Notifications = (props: { notif: boolean }) => {
   const [index, setIndex] = useState(0);
   const [visits, setVisits] = useState<VisitInterface[]>();
+  const [matches, setMatches] = useState<UpdateUserInfoInterface[]>();
   const [unseenVisits, setUnseenVisits] = useState(0);
 
   const handleSelect = (selectedIndex: number) => {
@@ -68,6 +73,14 @@ const Notifications = (props: { notif: boolean }) => {
 
   const getUserVisits = useCallback(async () => {
     const res = await getVisits();
+    console.log(res.status);
+    if (res.status !== SUCCESS) {
+      console.log(`session experied, need to logout user`);
+      localStorage.clear();
+      window.history.pushState({}, '/');
+      window.location.reload();
+      return;
+    }
     const v = await res.json();
     const visitors: VisitInterface[] = v.visits;
     let unseenV = 0;
@@ -79,12 +92,21 @@ const Notifications = (props: { notif: boolean }) => {
     setUnseenVisits(unseenV);
     setVisits(visitors);
   }, [props.notif]);
+
+  const getMatches = useCallback(async () => {
+    const res = await getUserMatches();
+    const m = await res.json();
+    const matchedUsers: UpdateUserInfoInterface[] = m.matches;
+    setMatches(matchedUsers);
+  }, [props.notif]);
+
   useEffect(() => {
     getUserVisits();
+    getMatches();
     console.log(`HERE >>> ${props.notif}`);
-  }, [getUserVisits]);
+  }, [getUserVisits, getMatches]);
 
-  return !visits ? (
+  return !visits || !matches?.length ? (
     <Loading />
   ) : (
     <>
@@ -125,7 +147,11 @@ const Notifications = (props: { notif: boolean }) => {
                 <hr />
                 <h6>Matches</h6>
               </ActiveTitle>
-              <p>Nulla vitae elit libero, a pharetra augue mollis interdum.</p>
+              {matches.length === 0 ? (
+                <p>You don't have any match, start swapping!</p>
+              ) : (
+                <MatchesCard matches={matches} />
+              )}
             </Wrapper>
           </Carousel.Item>
           <Carousel.Item>
@@ -148,7 +174,7 @@ const Notifications = (props: { notif: boolean }) => {
                 <h6>Visits</h6>
               </ActiveTitle>
               {visits?.length === 0 ? (
-                <p>you don't have any visitor</p>
+                <p>You don't have any visitor</p>
               ) : (
                 <>
                   <VisitCard visitors={visits} />

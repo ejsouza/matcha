@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { Container, Row, Col, Alert } from 'react-bootstrap';
 import Settings from 'components/Settings';
-import Likes from 'components/Likes';
+import Notifications from 'components/Notifications';
 import Deck from 'components/Deck';
 import { updateUserCoordinates, UpdateUserInfoInterface } from 'api/user';
 import defaultProfilePicture from 'assets/icons/profile-picture-default.svg';
@@ -25,13 +25,17 @@ const MainContent = styled(Col)`
 
 const ProfileHeader = styled(Row)`
   height: 74px;
+  // width is test and position
+  position: fixed;
+  width: 25.6%;
   background-color: red; /* For browsers that do not support gradients */
   background-image: linear-gradient(to right, #fd297b, #ff655b);
   -webkit-box-shadow: 0px 0px 4px rgba(0, 0, 0, 0.2);
   box-shadow: 0px 1px 4px rgba(0, 0, 0.5, 0.5);
   position: -webkit-sticky;
   top: -1px;
-  z-index: 3;
+  //z-index: 3;
+  z-index: 1096;
 `;
 
 const BoxHeader = styled(Col)`
@@ -54,7 +58,7 @@ const BoxProfileHeaderItem = styled(Col)`
 const HomeDesktop = () => {
   const [errorGeo, setErrorGeo] = useState(false);
   const [showSettings, setShowSettings] = useState(true);
-  const [showLikes, setShowLikes] = useState(false);
+  const [showNotification, setShowNotification] = useState(false);
 
   useEffect(() => {
     const userGeolocation: UpdateUserInfoInterface = {};
@@ -102,13 +106,13 @@ const HomeDesktop = () => {
   }, []);
 
   const handleShowSettings = () => {
-    setShowLikes(false);
+    setShowNotification(false);
     setShowSettings(true);
   };
 
-  const handleShowLikes = () => {
+  const handleshowNotification = () => {
     setShowSettings(false);
-    setShowLikes(true);
+    setShowNotification(true);
   };
 
   return (
@@ -146,13 +150,13 @@ const HomeDesktop = () => {
                     src={briefcase}
                     height="24px"
                     width="24px"
-                    onClick={handleShowLikes}
+                    onClick={handleshowNotification}
                   />
                 </BoxHeaderItem>
               </BoxHeader>
             </ProfileHeader>
             {showSettings && <Settings />}
-            {showLikes && <Likes />}
+            {showNotification && <Notifications notif={showNotification} />}
           </SideBar>
           <MainContent sm={12} md={9}>
             <Deck />

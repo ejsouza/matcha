@@ -1,6 +1,7 @@
 :root {
   --primary-color: #fd297b;
   --secondary-color: #ff655b;
+  --primary-gray-color: #868e96;
   --primary-gradient-color: linear-gradient(to right, #fd297b, #ff655b);
 }
 body {
