@@ -7,6 +7,11 @@ class LikeRepository {
     return db.query(query, [userId]);
   }
 
+  async getLikedBy(userId: string) {
+    const query = 'SELECT * FROM likes WHERE liked_id = $1';
+    return db.query(query, [userId]);
+  }
+
   async getUserDislikes(userId: string) {
     const query = 'SELECT * FROM dislikes WHERE user_id = $1';
     return db.query(query, [userId]);

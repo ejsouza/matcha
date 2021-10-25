@@ -9,6 +9,12 @@ class LikeService {
     return likes;
   }
 
+  async getLikedBy(userId: string) {
+    const res = await likesRepository.getLikedBy(userId);
+    const likes: CreateLikeDto[] = res.rows;
+    return likes;
+  }
+
   async getUserDislikes(userId: string) {
     const res = await likesRepository.getUserDislikes(userId);
     const dislikes: CreateDislikeDto[] = res.rows;

@@ -58,3 +58,12 @@ CREATE TABLE blocked_users (
 	blocker_id INT,
 	blocked_id INT
 );
+
+-- DROP TABLE IF EXISTS visits;
+CREATE TABLE visits (
+	id SERIAL PRIMARY KEY,
+	visitee_id INT,
+	visitor_id INT,
+	seen_visit BOOLEAN DEFAULT FALSE,
+	visited_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

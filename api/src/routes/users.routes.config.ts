@@ -46,6 +46,10 @@ export class UserRoutes extends CommonRoutesConfig {
         tokenMiddleware.validJWTNeeded,
         userController.patchUserCoordinates
       );
+      this.app
+        .route(`/users/:userId/matches`)
+        .all(userMiddleware.validateUserExists)
+        .get(userController.getUserMatches);
     return this.app;
   }
 }

@@ -40,6 +40,8 @@ interface UserPicturesDto {
   path: string;
 }
 
+interface UserMapedDto extends CreateUserDto, UserDto, UserPicturesDto {}
+
 export const MapUserDto = async (data: CreateUserDto[]) => {
   return Promise.all(
     data.map((usr) => {

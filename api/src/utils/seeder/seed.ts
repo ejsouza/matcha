@@ -10,16 +10,6 @@ import https from 'https';
 
 faker.locale = 'fr';
 
-interface FakeFaceResponse {
-  age: number;
-  date_added: Date;
-  filename: string;
-  gender: string;
-  image_url: string;
-  last_served: Date;
-  source: string;
-}
-
 const randTags = async (userId: number) => {
   let base = [
     0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
@@ -84,7 +74,7 @@ const createUserAccount = async () => {
     const lastname = faker.name.lastName(); //3
     const username = faker.internet.userName(firstname); //1
     const email = faker.internet.email(`${firstname} ${lastname}`); //4
-    const biography = faker.lorem.sentence(6); //8
+    const biography = faker.lorem.sentence(10, 10); //8
     const clearPassword = faker.internet.password(); //x
     const password = await bcrypt.hash(clearPassword, SALT_ROUNDS); //5
     const sexual_orientation = faker.random.arrayElement(sexuality); //6
@@ -127,7 +117,7 @@ const createUserAccount = async () => {
       is_connected,
       popularity,
     ]);
-    console.log(`created user ${i}...`);
+    console.log(`creating user ${username} gender ${gender} number ${i}...`);
 
     https.get(
       `https://fakeface.rest/face/json?gender=${gender}&minimum_age=18&maximum_age=30`,
@@ -150,6 +140,8 @@ const createUserAccount = async () => {
     );
 
     randTags(i);
+
+    setTimeout(() => {}, 100);
   }
 };
 

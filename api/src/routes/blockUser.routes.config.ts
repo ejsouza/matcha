@@ -5,14 +5,14 @@ import blockUserController from '../controllers/blockUser.controller';
 
 export class BlockUserRoutes extends CommonRoutesConfig {
   constructor(app: express.Application) {
-    super(app, 'BlockRoutes');
+    super(app, 'BlockUserRoutes');
   }
 
   configureRoutes() {
     this.app
-      .route('/blocked')
+      .route('/block')
       .get(blockUserController.listBlockedByUser)
-      .post(tokenMiddleware.validJWTNeeded, blockUserController.create);
+      .post(tokenMiddleware.containValidJWT, blockUserController.create);
 
     return this.app;
   }

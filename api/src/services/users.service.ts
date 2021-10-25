@@ -2,6 +2,7 @@ import bcrypt from 'bcrypt';
 import { CRUD } from '../common/interfaces/crud.interface';
 import { CreateUserDto } from '../dto/users/create.user.dto';
 import { PatchUserDto } from '../dto/users/patch.user.dto';
+import { MapUserMatchesDto } from '../dto/users/match.user.dto';
 import userRepository from '../repositories/user.repository';
 import { SALT_ROUNDS } from '../config/const';
 
@@ -117,7 +118,7 @@ class UserService implements CRUD {
           break;
       }
     }
-    return matches;
+    return await MapUserMatchesDto(requester, matches);
   }
 
   async getById(id: string) {

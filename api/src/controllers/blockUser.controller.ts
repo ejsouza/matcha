@@ -4,8 +4,9 @@ import { CreateBlockDto } from '../dto/block/create.block.dto';
 
 class BlockUserController {
   async listBlockedByUser(req: express.Request, res: express.Response) {
-    const blocker_id = req.body;
+    const { blocker_id } = req.body;
 
+    console.log(`Controller listBlockedByUser(${blocker_id})`);
     if (!blocker_id) {
       return res
         .status(400)
