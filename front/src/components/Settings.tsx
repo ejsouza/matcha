@@ -255,7 +255,7 @@ const Settings = () => {
         onHide={handleClose}
         backdrop="static"
         keyboard={false}
-        size="sm"
+        size="lg"
         scrollable
         dialogClassName="gray-one"
       >
