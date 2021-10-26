@@ -15,25 +15,32 @@ const Container = styled.div`
 `;
 
 const TitlePrev = styled.div`
-  top: 100px;
+  top: 70px;
   display: flex;
-  position: fixed;
+  align-items: center;
+  position: absolute;
   color: #868e96;
-  margin-left: -20px;
+  margin-left: -30px;
+  height: 70px;
+  width: 20%;
 `;
 
 const TitleNext = styled.div`
-  top: 100px;
+  top: 70px;
   display: flex;
-  position: fixed;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
   color: #868e96;
-  margin-left: -50px;
+  margin-left: -10px;
+  height: 70px;
+  width: 5.6%;
 `;
 
 const WrapTitle = styled.div`
-  position: relative;
-  margin-top: -100px;
-  text-align: center;
+  // position: relative;
+  // margin-top: -100px;
+  // text-align: center;
 `;
 
 const Wrapper = styled.div`
@@ -144,7 +151,7 @@ const Notifications = (props: { notif: boolean }) => {
           <Carousel.Item>
             <Wrapper>
               <ActiveTitle>
-                <hr />
+                {/* <hr /> */}
                 <h6>Matches</h6>
               </ActiveTitle>
               {matches.length === 0 ? (
@@ -157,7 +164,7 @@ const Notifications = (props: { notif: boolean }) => {
           <Carousel.Item>
             <Wrapper>
               <ActiveTitle>
-                <hr />
+                {/* <hr /> */}
 
                 <h6>Messages</h6>
               </ActiveTitle>
@@ -169,7 +176,7 @@ const Notifications = (props: { notif: boolean }) => {
           <Carousel.Item>
             <Wrapper>
               <ActiveTitle>
-                <hr />
+                {/* <hr /> */}
 
                 <h6>Visits</h6>
               </ActiveTitle>
