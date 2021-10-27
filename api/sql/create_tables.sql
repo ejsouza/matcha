@@ -64,6 +64,16 @@ CREATE TABLE visits (
 	id SERIAL PRIMARY KEY,
 	visitee_id INT,
 	visitor_id INT,
-	seen_visit BOOLEAN DEFAULT FALSE,
+	seen BOOLEAN DEFAULT FALSE,
 	visited_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- DROP TABLE IF EXISTS messages;
+CREATE TABLE messages (
+	id SERIAL PRIMARY KEY,
+	sender_id INT,
+	receiver_id INT,
+	message VARCHAR(255),
+	seen BOOLEAN DEFAULT FALSE,
+	sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
