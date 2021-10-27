@@ -11,7 +11,7 @@
   ```
   make seed
   ```
-  `(ps: if you get an XXXX ERROR, the database is not ready to accept connection yet, wait a few seconds and try again)`
+  `(ps: if you ECONNREFUSED error, the database is not ready to accept connection yet, wait a few seconds and try again)`
   <br><br>
   Once the seeder is finished point your browser to: 
   
