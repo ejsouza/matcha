@@ -36,7 +36,7 @@ const MessageCard = ({ callBack, sendTo }: IProps) => {
       return;
     }
     const id = sendTo?.toString() || '';
-    sendMessage(message, id).then((res) => {
+    sendMessage(id, message).then((res) => {
       if (!res?.ok) {
         setAlertMsg(
           "Something went wrong, your message couldn't be delivered."
