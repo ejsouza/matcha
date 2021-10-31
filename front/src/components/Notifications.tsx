@@ -9,7 +9,7 @@ import { getMessages } from 'api/message';
 import VisitCard from './VisitCard';
 import MatchesCard from './MatchesCard';
 import { SUCCESS } from 'utils/const';
-import DisplayMessageCard, { UserReceivedMessage } from './DisplayMessageCard';
+import DisplayMessageCard, { MessageInterface } from './DisplayMessageCard';
 
 const Container = styled.div`
   padding-left: 16px;
@@ -76,7 +76,7 @@ const Notifications = (props: { notif: boolean }) => {
   const [index, setIndex] = useState(0);
   const [visits, setVisits] = useState<VisitInterface[]>();
   const [matches, setMatches] = useState<UpdateUserInfoInterface[]>();
-  const [messages, setMessages] = useState<UserReceivedMessage[]>();
+  const [messages, setMessages] = useState<MessageInterface[]>();
   const [unseenVisits, setUnseenVisits] = useState(0);
   const [unseenMessages, setUnseenMessages] = useState(0);
 
@@ -119,10 +119,10 @@ const Notifications = (props: { notif: boolean }) => {
   const getUserMessages = useCallback(async () => {
     const res = await getMessages();
     const m = await res.json();
-    const msgs: UserReceivedMessage[] = m.messages;
+    const msgs: MessageInterface[] = m.messages;
     let unseenM = 0;
     msgs.forEach((msg) => {
-      if (!msg.message.seen) {
+      if (!msg.seen) {
         unseenM++;
       }
     });
