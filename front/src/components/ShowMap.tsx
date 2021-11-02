@@ -3,7 +3,7 @@ import { Modal } from 'react-bootstrap';
 import { useAppDispatch, useAppSelector } from 'store/hook';
 import { userInfoUpdated } from 'store/actions';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-import UpdateLink from './Desktop/UpdateLink';
+import UpdateLink from './desktop/UpdateLink';
 import { UserInterface } from 'interfaces';
 import {
   getUser,
