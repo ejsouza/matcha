@@ -4,9 +4,14 @@ import { Offcanvas, Form, FloatingLabel } from 'react-bootstrap';
 import { useAppSelector } from 'store/hook';
 import { UserInterface } from 'interfaces';
 import Button from 'components/Button';
-import { getUserMatches, getUsers, UpdateUserInfoInterface } from 'api/user';
+import { getUserMatches, UpdateUserInfoInterface } from 'api/user';
 import { getUserChats, postMessage, ChatMessageInterface } from 'api/chat';
+import socket from 'socket/socket.io';
 import { CREATED } from 'utils/const';
+import {
+  CHAT_SENT_MESSAGE,
+  CHAT_RECEIVED_MESSAGE,
+} from 'socket/const.socket.io';
 
 interface ChatInterface {
   id: number;
@@ -47,6 +52,7 @@ const GridItemMain = styled.div`
   height: 70vh;
   overflow-y: scroll;
 `;
+
 const GridItemOnline = styled.div`
   height: 70vh;
   grid-row-start: 1;
@@ -207,21 +213,33 @@ const Chat = () => {
     });
   }, [chats]);
 
-  const initiateChat = async (userId: number) => {
-    const currentChatUser = users?.find((user) => user.id === userId);
-    setChatWithUser(currentChatUser);
+  const updateChatDisplay = async (userId: number) => {
     const res = await getUserChats(userId);
-    const data = await res.json();
-    const chts: ChatInterface[] = data.chats;
-    chts.sort((a, b) => {
+    const json = await res.json();
+    const chats: ChatInterface[] = json.chats;
+
+    chats.sort((a, b) => {
       return +new Date(a.sent_at) - +new Date(b.sent_at);
     });
-    setChats([...chts]);
+    setChats([...chats]);
+  };
+
+  const initiateChat = (userId: number) => {
+    const currentChatUser = users?.find((user) => user.id === userId);
+    setChatWithUser(currentChatUser);
+    updateChatDisplay(userId);
+    // const res = await getUserChats(userId);
+    // const data = await res.json();
+    // const chts: ChatInterface[] = data.chats;
+    // chts.sort((a, b) => {
+    //   return +new Date(a.sent_at) - +new Date(b.sent_at);
+    // });
+    // setChats([...chts]);
   };
 
   const handleSendMessage = async () => {
     console.log(`sending message := ${messageText}`);
-    if (!chatWithUser?.id) {
+    if (!chatWithUser?.id || messageText.length < 2) {
       /**
        * WARNING:: think better strategy here.
        * Could be confusing to the user returning without
@@ -237,19 +255,22 @@ const Chat = () => {
     try {
       const res = await postMessage(resource);
       if (res.status === CREATED) {
-        const response = await getUserChats(chatWithUser.id);
-        const data = await response.json();
-        const chts: ChatInterface[] = data.chats;
-        chts.sort((a, b) => {
-          return +new Date(a.sent_at) - +new Date(b.sent_at);
-        });
-        setChats([...chts]);
+        // const response = await getUserChats(chatWithUser.id);
+        // const data = await response.json();
+        // const chts: ChatInterface[] = data.chats;
+        // chts.sort((a, b) => {
+        //   return +new Date(a.sent_at) - +new Date(b.sent_at);
+        // });
+        // setChats([...chts]);
+        updateChatDisplay(chatWithUser.id);
+        socket.emit(CHAT_SENT_MESSAGE, { to: chatWithUser.username });
         setMessageText('');
       }
     } catch (err) {
       console.log(`something when wrong posting chat message := ${err}`);
     }
   };
+
   return (
     <>
       <ButtonWrapper>
