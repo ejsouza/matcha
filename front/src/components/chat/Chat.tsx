@@ -21,6 +21,13 @@ interface ChatInterface {
   sent_at: Date;
 }
 
+interface NewMessage {
+  to: string;
+  from: string;
+  content: string;
+  sent_at: Date;
+}
+
 interface OnlineInterface {
   color: string;
 }
@@ -213,6 +220,11 @@ const Chat = () => {
     });
   }, [chats]);
 
+  useEffect(() => {
+    socket.on('private message', (message: NewMessage) => {
+      console.log(`Got new message from ${message.from}`);
+    });
+  }, []);
   const updateChatDisplay = async (userId: number) => {
     const res = await getUserChats(userId);
     const json = await res.json();
@@ -262,8 +274,14 @@ const Chat = () => {
         //   return +new Date(a.sent_at) - +new Date(b.sent_at);
         // });
         // setChats([...chts]);
+        const privateMessage: NewMessage = {
+          to: chatWithUser.username || '',
+          from: user.username,
+          content: messageText,
+          sent_at: new Date(),
+        };
         updateChatDisplay(chatWithUser.id);
-        socket.emit(CHAT_SENT_MESSAGE, { to: chatWithUser.username });
+        socket.emit('private message', privateMessage);
         setMessageText('');
       }
     } catch (err) {
