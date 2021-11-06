@@ -15,6 +15,8 @@ const UNAUTHORIZED = 401;
 const LOGGED_USER = 'loggedUser';
 const USER_TOKEN = 'userToken';
 
+const SESSION = 'session';
+
 const PASS_REGEX = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])[0-9a-zA-Z]{6,}$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -34,4 +36,5 @@ export {
   PASS_REGEX,
   EMAIL_REGEX,
   USER_INFO_UPDATED,
+  SESSION,
 };
