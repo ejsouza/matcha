@@ -2,6 +2,7 @@
   --primary-color: #fd297b;
   --secondary-color: #ff655b;
   --primary-gray-color: #868e96;
+  --secondary-gray-color: #ccd0d3;
   --primary-gradient-color: linear-gradient(to right, #fd297b, #ff655b);
 }
 body {
