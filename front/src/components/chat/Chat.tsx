@@ -8,17 +8,16 @@ import { getUserMatches, UpdateUserInfoInterface } from 'api/user';
 import { getUserChats, postMessage, ChatMessageInterface } from 'api/chat';
 import socket from 'socket/socket.io';
 import { CREATED } from 'utils/const';
-import {
-  CHAT_SENT_MESSAGE,
-  CHAT_RECEIVED_MESSAGE,
-} from 'socket/const.socket.io';
+import { getUserIdFromLocalStorage } from 'utils/user';
+import MatchProfile from './MatchProfile';
 
-interface ChatInterface {
+export interface ChatInterface {
   id: number;
   sender_id: number;
   receiver_id: number;
   text: string;
   sent_at: Date;
+  seen: boolean;
 }
 
 interface NewMessage {
@@ -28,9 +27,9 @@ interface NewMessage {
   sent_at: Date;
 }
 
-interface OnlineInterface {
-  color: string;
-}
+// interface OnlineInterface {
+//   color: string;
+// }
 
 interface MessageBoxInterface {
   alignDirection: string;
@@ -40,10 +39,32 @@ interface MessageWrapperInterface {
   backgroundColor: string;
 }
 
+// interface UnreadMessagesInterface {
+//   display: string;
+// }
+
 const ButtonWrapper = styled.div`
   position: fixed;
   top: 0;
   right: 10px;
+`;
+
+const MessageNotification = styled.div`
+  position: absolute;
+  right: 0;
+  top: 15px;
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  text-align: center;
+  background: red;
+  border: 1px solid #fff;
+  padding: 1px;
+
+  span {
+    position: relative;
+    color: #fff;
+  }
 `;
 
 const GridContainer = styled.div`
@@ -74,25 +95,25 @@ const GridItemInput = styled.div`
   height: 15vh;
 `;
 
-const OnlineProfileWrapper = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: start;
-  align-content: space-between;
-  padding: 0.5em 0.2em;
-  cursor: pointer;
-  border-radius: 10px;
-  :hover {
-    background-color: var(--primary-color);
-  }
-  :hover > div > span {
-    color: #fff;
-  }
-`;
+// const OnlineProfileWrapper = styled.div`
+//   display: flex;
+//   align-items: center;
+//   justify-content: start;
+//   align-content: space-between;
+//   padding: 0.5em 0.2em;
+//   cursor: pointer;
+//   border-radius: 10px;
+//   :hover {
+//     background-color: var(--primary-color);
+//   }
+//   :hover > div > span {
+//     color: #fff;
+//   }
+// `;
 
-const ImageWrapper = styled.div`
-  position: relative;
-`;
+// const ImageWrapper = styled.div`
+//   position: relative;
+// `;
 
 const ImageMessageWrapper = styled.div`
   padding-left: 0.3em;
@@ -105,24 +126,44 @@ const OnlineProfileImg = styled.img`
   object-fit: cover;
 `;
 
-const OnlineUserName = styled.div`
-  span {
-    font-size: 0.6em;
-    margin-left: 0.5em;
-    color: var(--primary-gray-color);
-  }
-`;
+// const OnlineUserName = styled.div`
+//   span {
+//     font-size: 0.6em;
+//     margin-left: 0.5em;
+//     color: var(--primary-gray-color);
+//   }
+// `;
 
-const OnlineBadge = styled.div<OnlineInterface>`
-  position: absolute;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  border: 1px solid white;
-  background-color: ${(p) => p.color};
-  top: 0;
-  left: 25px;
-`;
+// const UnreadMessages = styled.div<UnreadMessagesInterface>`
+//   position: relative;
+
+//   span {
+//     width: 16px;
+//     height: 16px;
+//     border-radius: 50%;
+//     text-align: center;
+//     border: 1px solid var(--secondary-color);
+//     position: absolute;
+//     display: ${(p) => p.display};
+//     top: -20px;
+//     right: -10px;
+//     font-size: 0.6em;
+//     margin-left: 0.5em;
+//     color: #fff;
+//     background-color: var(--secondary-color);
+//   }
+// `;
+
+// const OnlineBadge = styled.div<OnlineInterface>`
+//   position: absolute;
+//   width: 12px;
+//   height: 12px;
+//   border-radius: 50%;
+//   border: 1px solid white;
+//   background-color: ${(p) => p.color};
+//   top: 0;
+//   left: 25px;
+// `;
 
 const MessageBox = styled.div<MessageBoxInterface>`
   display: flex;
@@ -182,8 +223,11 @@ const Chat = () => {
   const [chatWithUser, setChatWithUser] = useState<UpdateUserInfoInterface>();
   const [chats, setChats] = useState<ChatInterface[]>();
   const [messageText, setMessageText] = useState('');
+  const [globalMessageNotificationCount, setGlobalMessageNotificationCount] =
+    useState(0);
   const user: UserInterface = useAppSelector((state) => state.user);
   const scrollRef = useRef<null | HTMLDivElement>(null);
+  // const unreadMessages = useRef(0);
 
   const handleClose = () => {
     setShow(false);
@@ -193,7 +237,23 @@ const Chat = () => {
     setChats(undefined);
     setChatWithUser(undefined);
   };
-  const handleShow = () => setShow(true);
+  const handleShow = () => {
+    setShow(true);
+    // unreadMessages.current = 0;
+    // setGlobalMessageNotificationCount(0);
+  };
+
+  const updateChatDisplay = async (userId: number) => {
+    const res = await getUserChats(userId);
+    const json = await res.json();
+    const chats: ChatInterface[] = json.chats;
+
+    chats.sort((a, b) => {
+      return +new Date(a.sent_at) - +new Date(b.sent_at);
+    });
+    setChats(chats);
+    console.log(`updateChatDisplay()`);
+  };
 
   useEffect(() => {
     const getUsrs = async () => {
@@ -221,32 +281,88 @@ const Chat = () => {
   }, [chats]);
 
   useEffect(() => {
+    console.log(`Component did mount!`);
+    let isMounted = true;
     socket.on('private message', (message: NewMessage) => {
-      console.log(`Got new message from ${message.from}`);
+      console.log(
+        `Got new message from ${message.from} is online ${user.is_connected}`
+      );
+      const id = chatWithUser?.id || 0;
+      if (isMounted) {
+        updateChatDisplay(id);
+      }
     });
-  }, []);
-  const updateChatDisplay = async (userId: number) => {
-    const res = await getUserChats(userId);
-    const json = await res.json();
-    const chats: ChatInterface[] = json.chats;
+    let unread = 0;
+    chats?.forEach((chat) => {
+      if (!chat.seen && chat.sender_id !== user.id) {
+        unread += 1;
+      }
+    });
+    if (isMounted) {
+      setGlobalMessageNotificationCount(unread);
+    }
+    console.log(`unseen messages ${unread}`);
+    return () => {
+      isMounted = false;
+    };
+    /**
+     * 'chats' shall be in the dependencies array, otherwise when a message
+     * is sent it won't update the component on 'real' time.
+     */
+  }, [chats]);
 
-    chats.sort((a, b) => {
-      return +new Date(a.sent_at) - +new Date(b.sent_at);
-    });
-    setChats([...chats]);
-  };
+  useEffect(() => {
+    console.log(`Mounted`);
+    (async () => {
+      /**
+       * We get the userID here from local storage
+       * taking it from the global user doesn't work
+       * because it will be 0 when this function will run
+       * when we login
+       */
+      const userId = getUserIdFromLocalStorage() || 0;
+      const res = await getUserChats(userId);
+      const json = await res.json();
+      const chats: ChatInterface[] = json.chats;
+      let unread = 0;
+      chats?.forEach((chat) => {
+        if (!chat.seen && chat.sender_id !== userId) {
+          unread += 1;
+        }
+      });
+      setGlobalMessageNotificationCount(unread);
+    })();
+  }, [chats]);
+
+  // useEffect(() => {
+  //   socket.on('new message', () => {
+  //     console.log(`got new message`);
+  //   });
+  // }, []);
 
   const initiateChat = (userId: number) => {
     const currentChatUser = users?.find((user) => user.id === userId);
     setChatWithUser(currentChatUser);
     updateChatDisplay(userId);
-    // const res = await getUserChats(userId);
-    // const data = await res.json();
-    // const chts: ChatInterface[] = data.chats;
-    // chts.sort((a, b) => {
-    //   return +new Date(a.sent_at) - +new Date(b.sent_at);
-    // });
-    // setChats([...chts]);
+  };
+
+  const currentChatUserMessagesSentToCurrentUser = (
+    currentChatUserId: number
+  ) => {
+    const getData = async () => {
+      let unread = 0;
+      const res = await getUserChats(currentChatUserId);
+      const json = await res.json();
+      const chats: ChatInterface[] = json.chats;
+
+      chats?.forEach((chat) => {
+        if (!chat.seen && chat.receiver_id === user.id) {
+          unread += 1;
+        }
+      });
+      return unread;
+    };
+    return getData();
   };
 
   const handleSendMessage = async () => {
@@ -267,21 +383,17 @@ const Chat = () => {
     try {
       const res = await postMessage(resource);
       if (res.status === CREATED) {
-        // const response = await getUserChats(chatWithUser.id);
-        // const data = await response.json();
-        // const chts: ChatInterface[] = data.chats;
-        // chts.sort((a, b) => {
-        //   return +new Date(a.sent_at) - +new Date(b.sent_at);
-        // });
-        // setChats([...chts]);
         const privateMessage: NewMessage = {
           to: chatWithUser.username || '',
           from: user.username,
           content: messageText,
           sent_at: new Date(),
         };
-        updateChatDisplay(chatWithUser.id);
+        console.log(
+          `receiverName := ${privateMessage.to} senderName := ${privateMessage.from}`
+        );
         socket.emit('private message', privateMessage);
+        updateChatDisplay(chatWithUser.id);
         setMessageText('');
       }
     } catch (err) {
@@ -292,6 +404,11 @@ const Chat = () => {
   return (
     <>
       <ButtonWrapper>
+        {!show && globalMessageNotificationCount > 0 && (
+          <MessageNotification>
+            <span>{globalMessageNotificationCount}</span>
+          </MessageNotification>
+        )}
         <Button text="chat" wid="100px" callBack={handleShow} />
       </ButtonWrapper>
       <Offcanvas show={show} onHide={handleClose} placement="end">
@@ -346,20 +463,36 @@ const Chat = () => {
             </GridItemMain>
             <GridItemOnline className="vertical-line">
               {users?.map((user) => (
-                <OnlineProfileWrapper
+                // <OnlineProfileWrapper
+                //   key={user.id}
+                //   // onClick={() => initiateChat(user.id || 0)}
+                // >
+                //   <ImageWrapper>
+                //     <OnlineBadge
+                //       color={user.is_connected ? 'limegreen' : 'grey'}
+                //     />
+                //     <OnlineProfileImg
+                //       src={
+                //         user.default_picture?.startsWith('https')
+                //           ? user.default_picture
+                //           : `${process.env.REACT_APP_API_URL}/uploads/${user.default_picture}`
+                //       }
+                //     />
+                //   </ImageWrapper>
+                //   <OnlineUserName>
+                //     <span>{user.firstname}</span>
+                //   </OnlineUserName>
+                //   {/* <UnreadMessages display="inline-block">
+                //     <span>
+                //       {currentChatUserMessagesSentToCurrentUser(user.id || 0)}
+                //     </span>
+                //   </UnreadMessages> */}
+                <MatchProfile
+                  cb={() => initiateChat(user.id || 0)}
+                  user={user}
                   key={user.id}
-                  onClick={() => initiateChat(user.id || 0)}
-                >
-                  <ImageWrapper>
-                    <OnlineBadge
-                      color={user.is_connected ? 'limegreen' : 'grey'}
-                    />
-                    <OnlineProfileImg src={user.default_picture} />
-                  </ImageWrapper>
-                  <OnlineUserName>
-                    <span>{user.firstname}</span>
-                  </OnlineUserName>
-                </OnlineProfileWrapper>
+                />
+                // </OnlineProfileWrapper>
               ))}
               {!users?.length && (
                 <NoMatchWrapper>
