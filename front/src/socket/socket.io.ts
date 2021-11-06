@@ -5,7 +5,7 @@ import {
   saveSessionToLocalStorage,
   removeSessionFromLocalStorage,
 } from 'utils/session';
-const URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
+const URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
 export interface SessionInterface {
   userID: string;
@@ -14,7 +14,15 @@ export interface SessionInterface {
   connected: boolean;
 }
 
-const socket = io(URL);
+/**
+ * If user closed the tab without logout
+ * send it's username/userID to re-establish the socket connection.
+ * Otherwise we lose connection and sending message
+ * is not possible until logout and login back
+ */
+const session = getSessionFromLocalStorage();
+
+const socket = io(URL, { query: { username: `${session?.username}` } });
 
 socket.on(CONNECT_ERROR, (err: any) => {
   console.log(`SOCKET ERROR ${err}`);
