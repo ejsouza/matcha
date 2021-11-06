@@ -113,9 +113,6 @@ const MatchProfile = (props: MatchProfilePros) => {
     cb(user.id || 0);
     chats?.forEach((chat) => {
       if (chat.receiver_id === currentUserId && !chat.seen) {
-        console.log(
-          `[${chat.id}] sender(${chat.sender_id}) receiver(${chat.receiver_id}) seen(${chat.seen})`
-        );
         setChatToSeen(chat.id);
       }
     });
