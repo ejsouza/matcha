@@ -1,9 +1,21 @@
 import bcrypt from 'bcrypt';
 import { CRUD } from '../common/interfaces/crud.interface';
-import { CreateUserDto } from '../dto/users/create.user.dto';
+import {
+  CreateUserDto,
+  UserDto,
+  UserMapedDto,
+} from '../dto/users/create.user.dto';
 import { PatchUserDto } from '../dto/users/patch.user.dto';
 import { MapUserMatchesDto } from '../dto/users/match.user.dto';
+import { CreateLikeDto } from '../dto/likes/create.like.dto';
+import { CreateMessageDto } from '../dto/messages/create.message.dto';
 import userRepository from '../repositories/user.repository';
+import messageService from './messages.service';
+import likeService from './likes.service';
+import photoService from './photos.service';
+import tagService from './tags.service';
+import visitUserProfileService from './visitUserProfile.service';
+
 import { SALT_ROUNDS } from '../config/const';
 
 enum SexualOrientation {
@@ -124,24 +136,35 @@ class UserService implements CRUD {
   async getById(id: string) {
     const res = await userRepository.getUserById(id);
 
-    console.log(`getById(${res.rows[0]?.id})`);
-
     return res.rows[0] as CreateUserDto;
   }
 
   async getUserByEmail(email: string) {
     const res = await userRepository.getUserByEmail(email);
 
-    console.log(`getUserByEmail(${res.rows[0]?.email})`);
-
     return res.rows[0] as CreateUserDto;
   }
 
   async getUserByUsername(username: string) {
     const res = await userRepository.getUserByUsername(username);
-    console.log(`getUserByUsername(${res.rows[0]?.username})`);
 
     return res.rows[0] as CreateUserDto;
+  }
+
+  async getUserAllDetails(userId: string): Promise<UserMapedDto> {
+    return new Promise(async (resolve) => {
+      const user_details = <UserMapedDto>{};
+      user_details.user = await this.getById(userId);
+      user_details.visits = await visitUserProfileService.list(Number(userId));
+      user_details.likes = await likeService.getUserLikes(userId);
+      user_details.messages = await messageService.listUserMessages(
+        Number(userId)
+      );
+      user_details.pictures = await photoService.list(Number(userId));
+      user_details.tags = await tagService.getUserTags(userId);
+
+      resolve(user_details);
+    });
   }
 
   async getUserWithoutPassword(username: string) {
@@ -186,6 +209,10 @@ class UserService implements CRUD {
     }
     const res = await userRepository.decreaseUserPopularity(userId, popularity);
     return res.rowCount;
+  }
+
+  async status(userId: number, status: number) {
+    await userRepository.status(userId, status);
   }
 }
 
