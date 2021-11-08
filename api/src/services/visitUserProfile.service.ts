@@ -25,7 +25,7 @@ class VisitUserProfileService {
     const visit: CreateVisitUserProfileDto = {
       visitee_id: visiteeId,
       visitor_id: visitorId,
-      seen_visit: false,
+      seen: false,
       visited_at: new Date(),
     };
 
@@ -74,7 +74,7 @@ class VisitUserProfileService {
      */
     if (visitToUpdate) {
       const visit: CreateVisitUserProfileDto = { ...visitToUpdate };
-      visit.seen_visit = false;
+      visit.seen = false;
       visit.visited_at = new Date();
 
       const res = await visitUserProfileRepository.put(visitToUpdate.id, visit);
