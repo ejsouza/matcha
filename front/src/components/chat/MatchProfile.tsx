@@ -96,16 +96,18 @@ const MatchProfile = (props: MatchProfilePros) => {
     (async () => {
       let unread = 0;
       const res = await getUserChats(user.id || 0);
-      const json = await res.json();
-      const chats: ChatInterface[] = json.chats;
-      setChats(chats);
-      chats?.forEach((chat) => {
-        if (!chat.seen && chat.receiver_id === currentUserId) {
-          unread += 1;
-        }
-      });
-      setUnreadMessages(unread);
-      setLoading(false);
+			if (res.ok) {
+        const json = await res.json();
+        const chats: ChatInterface[] = json.chats;
+        setChats(chats);
+        chats?.forEach((chat) => {
+          if (!chat.seen && chat.receiver_id === currentUserId) {
+            unread += 1;
+          }
+        });
+        setUnreadMessages(unread);
+        setLoading(false);
+      }
     })();
   }, []);
 
