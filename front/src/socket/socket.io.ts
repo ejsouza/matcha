@@ -1,5 +1,4 @@
 import io from 'socket.io-client';
-import { CONNECT_ERROR } from './const.socket.io';
 import {
   getSessionFromLocalStorage,
   saveSessionToLocalStorage,
@@ -20,12 +19,12 @@ export interface SessionInterface {
  * Otherwise we lose connection and sending message
  * is not possible until logout and login back
  */
-const session = getSessionFromLocalStorage();
+let session = getSessionFromLocalStorage();
 
 const socket = io(URL, { query: { username: `${session?.username}` } });
 
-socket.on(CONNECT_ERROR, (err: any) => {
-  console.log(`SOCKET ERROR ${err}`);
+socket.on('connect_error', (err: { message: string }) => {
+  console.log(`connect_error due to ${err.message}`);
 });
 
 socket.on('connect', () => {
@@ -34,6 +33,7 @@ socket.on('connect', () => {
 
 socket.on('disconnect', () => {
   console.log(`disconnect`);
+  socket.emit('gonne offline', { username: `${session?.username}` });
 });
 
 socket.on('session', (session: SessionInterface) => {
@@ -42,6 +42,19 @@ socket.on('session', (session: SessionInterface) => {
     saveSessionToLocalStorage(session);
     console.log('should save to local storage');
   }
+});
+
+socket.on('current session', (session: SessionInterface) => {
+  console.log(`<<< [SESSION] >>> [${session}]`);
+});
+
+socket.on('nullish session', () => {
+  /**
+   * it's a test to for the crashing after
+   * logout but not closing the tab
+   */
+  // session = undefined;
+  console.log(`do I get this nullish session`);
 });
 
 // socket.emit('ping', () => {
