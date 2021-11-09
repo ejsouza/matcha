@@ -139,6 +139,5 @@ export {
   getUserCity,
   calculateAge,
   popularity,
-  dateToStringFormat,
   capitalize,
 };
