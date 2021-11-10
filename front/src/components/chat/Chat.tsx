@@ -12,9 +12,10 @@ import {
   ChatMessageInterface,
 } from 'api/chat';
 import socket from 'socket/socket.io';
-import { CREATED } from 'utils/const';
+import { CREATED, SUCCESS } from 'utils/const';
 import { getUserIdFromLocalStorage } from 'utils/user';
 import MatchProfile from './MatchProfile';
+import formatDistanceToNow from 'date-fns/formatDistanceToNow';
 
 export interface ChatInterface {
   id: number;
@@ -122,6 +123,14 @@ const MessageTextWrapper = styled.div`
   color: #fff;
   padding: 0.5em;
   font-size: 0.8em;
+`;
+
+const DateWrapper = styled.div`
+  width: 100px;
+  color: #fff;
+  text-align: right;
+  margin-right: 1em;
+  font-size: 0.59em;
 `;
 
 const NoChatWrapper = styled.div`
@@ -257,15 +266,17 @@ const Chat = () => {
        */
       const userId = getUserIdFromLocalStorage() || 0;
       const res = await getUserChats(userId);
-      const json = await res.json();
-      const chats: ChatInterface[] = json.chats;
-      let unread = 0;
-      chats?.forEach((chat) => {
-        if (!chat.seen && chat.sender_id !== userId) {
-          unread += 1;
-        }
-      });
-      setGlobalMessageNotificationCount(unread);
+      if (res.status === SUCCESS) {
+        const json = await res.json();
+        const chats: ChatInterface[] = json.chats;
+        let unread = 0;
+        chats?.forEach((chat) => {
+          if (!chat.seen && chat.sender_id !== userId) {
+            unread += 1;
+          }
+        });
+        setGlobalMessageNotificationCount(unread);
+      }
     })();
   }, [chats]);
 
@@ -361,7 +372,15 @@ const Chat = () => {
                           alt="message-pic"
                         />
                       </ImageMessageWrapper>
-                      <MessageTextWrapper>{chat.text}</MessageTextWrapper>
+                      <MessageTextWrapper>
+                        {chat.text}
+
+                        <DateWrapper>
+                          {formatDistanceToNow(new Date(chat.sent_at), {
+                            addSuffix: true,
+                          })}
+                        </DateWrapper>
+                      </MessageTextWrapper>
                     </MessageWrapper>
                   </MessageBox>
                 ))
