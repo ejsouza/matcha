@@ -5,7 +5,7 @@ import Button from './Button';
 import { useAppDispatch, useAppSelector } from 'store/hook';
 import { showSignupCardUpdated } from 'store/actions';
 import styled from 'styled-components';
-import { CardHeader, CrossCard } from 'components/Desktop/LoginDesktop';
+import { CardHeader, CrossCard } from 'components/desktop/LoginDesktop';
 import { PASS_REGEX, EMAIL_REGEX, BAD_REQUEST, CREATED } from 'utils/const';
 import { Gap } from 'globalStyled';
 import { signup } from 'api/auth';
