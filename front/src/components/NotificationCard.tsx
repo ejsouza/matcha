@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Modal, Carousel } from 'react-bootstrap';
 import styled from 'styled-components';
+import Button from './Button';
 import { useAppDispatch, useAppSelector } from 'store/hook';
 import { UserInterface } from 'interfaces';
-import { VisitInterface } from './Notifications';
-import Loading from './Loading';
-import { getUserById, UpdateUserInfoInterface } from 'api/user';
+import { getUserAllDetails, UpdateUserInfoInterface } from 'api/user';
 import { visitUserProfile } from 'api/visit';
 import {
   ProfileWrapper,
@@ -22,11 +21,8 @@ import {
   aHundredLengthBio,
   calculateAge,
   popularity,
-  dateToStringFormat,
   capitalize,
 } from 'utils/user';
-import { getLikesByUserId } from 'api/like';
-import info from 'assets/icons/info.svg';
 import location from 'assets/icons/location.svg';
 import sexualOrientation from 'assets/icons/sexualOrientation.svg';
 import gender from 'assets/icons/gender.svg';
@@ -36,14 +32,17 @@ import userDescription from 'assets/icons/user-description.svg';
 import tagIcon from 'assets/icons/tag-icon.svg';
 import connected from 'assets/icons/online.svg';
 import { CREATED } from 'utils/const';
+import SendMessage from './SendMessage';
+import formatDistanceToNow from 'date-fns/formatDistanceToNow';
+import socket from 'socket/socket.io';
 
-const GridContainer = styled.div`
+export const GridContainer = styled.div`
   display: grid;
   grid-template-columns: 30% auto;
   grid-template-rows: 35px 35px;
 `;
 
-const GridItemPicture = styled.div`
+export const GridItemPicture = styled.div`
   align-self: center;
   justify-self: left;
   // use this trick to hide cursor because it inherits from bootstrap
@@ -51,7 +50,7 @@ const GridItemPicture = styled.div`
   z-index: 5;
 `;
 
-const GridItem = styled.div`
+export const GridItem = styled.div`
   align-self: center;
   justify-self: right;
   color: var(--primary-gray-color);
@@ -63,7 +62,7 @@ const GridItem = styled.div`
   z-index: 5;
 `;
 
-const ImgContainer = styled.img`
+export const ImgContainer = styled.img`
   width: 50px;
   height: 50px;
   display: contain;
@@ -71,65 +70,103 @@ const ImgContainer = styled.img`
   cursor: none;
 `;
 
+const ButtonWarapper = styled.div`
+  width: 100%;
+  position: absolute;
+  bottom: 0;
+`;
+
+interface MessageInterface {
+  id: number;
+  sender_id: number;
+  receiver_id: number;
+  message: string;
+  seen: boolean;
+  sent_at: Date;
+}
+
+interface TagsInterface {
+  id: number;
+  user_id?: number;
+  name: string;
+}
+
+interface PicturesInterface {
+  id: number;
+  user_id: number;
+  file_path: string;
+}
+
+export interface ProfileInterface {
+  user: UpdateUserInfoInterface;
+  messages: MessageInterface[];
+  tags: TagsInterface[];
+  likes: LikesInterface[];
+  pictures: PicturesInterface[];
+}
+
 const NotificationCard = (props: { users: UpdateUserInfoInterface[] }) => {
-  const [profile, setProfile] = useState<UpdateUserInfoInterface>();
+  const [profiles, setProfiles] = useState<ProfileInterface[]>([]);
+  const [profile, setProfile] = useState<ProfileInterface>();
   const [show, setShow] = useState(false);
+  const [showModal, setShowModal] = useState(false);
   const [likesCurrentUser, setLikesCurrentUser] = useState(false);
   const currentUser: UserInterface = useAppSelector((state) => state.user);
   const [userCity, setUserCity] = useState('');
   const [birthDate, setBirthDate] = useState('');
 
-  // useEffect(() => {
-  //   if (props.user.id) {
-  //     getLikesByUserId(props.user.id).then((res) => {
-  //       res.json().then((data) => {
-  //         const likes: LikesInterface[] = data.likes;
-  //         const alreadyLiked = likes.find(
-  //           (like) => like.liked_id === props.currentUserId
-  //         );
-  //         if (alreadyLiked) {
-  //           setLikesCurrentUser(true);
-  //           console.log(`likes := ${likes[0].liked_id} -- ${alreadyLiked}`);
-  //         }
-  //       });
-  //     });
-  //   }
-  // }, []);
+  useEffect(() => {
+    (async () => {
+      const usrs = (await Promise.all(
+        props.users.map((user) => {
+          return new Promise(async (resolve) => {
+            /**
+             * userId could be undefined and getUserAllDetails() expects a number
+             * so we do this trick, in any case we will not find any user with
+             * id 0 so the api will handle id=0 correctly.
+             */
+            const userId = user.id || 0;
+            const res = await getUserAllDetails(userId);
+            const data = await res.json();
+            const usr: ProfileInterface = data.user;
+            console.log(`res >> ${usr.user.firstname}`);
 
+            resolve(usr);
+          });
+        })
+      )) as ProfileInterface[];
+      setProfiles(usrs);
+    })();
+  }, []);
   const handleClose = async () => {
     setShow(false);
     setProfile(undefined);
     console.log('visited profile');
-    if (profile?.id) {
-      const visited = await visitUserProfile(profile?.id, currentUser.id);
+    if (profile?.user.id) {
+      const visited = await visitUserProfile(profile?.user.id, currentUser.id);
       if (visited.status === CREATED) {
-        console.log('Visit added');
+        console.log('Visit added to ', profile.user.username);
+        socket.emit('visit', profile.user.username);
       }
     }
   };
 
   const handleShowProfile = async (userId: number | undefined) => {
-    const userProfile = props.users.find((user) => user.id === userId);
-    if (userProfile && userProfile.id) {
-      console.log(
-        `profileID := ${userProfile.id} profileName := ${userProfile.firstname}`
-      );
-      const likeRes = await getLikesByUserId(userProfile.id);
-      const data = await likeRes.json();
-      const likes: LikesInterface[] = data.likes;
-      const alreadyLiked = likes.find(
+    const userProfile = profiles?.find((profile) => profile.user.id === userId);
+    if (userProfile?.user && userProfile.user.id) {
+      const alreadyLiked = userProfile.likes.find(
         (like) => like.liked_id === currentUser.id
       );
 
       if (alreadyLiked) {
         setLikesCurrentUser(true);
       }
-      if (userProfile.birthdate === 'string') {
-        setBirthDate(userProfile.birthdate);
+      if (userProfile.user.birthdate === 'string') {
+        setBirthDate(userProfile.user.birthdate);
       }
       const city = await getUserCity({
-        longitude: userProfile.localisation?.x,
-        latitude: userProfile.localisation?.y,
+        longitude: userProfile.user.localisation?.x,
+        latitude: userProfile.user.localisation?.y,
       });
       setUserCity(city);
       setProfile(userProfile);
@@ -137,15 +174,25 @@ const NotificationCard = (props: { users: UpdateUserInfoInterface[] }) => {
     }
   };
 
+  const toggleSendMessage = () => {
+    setShowModal(!showModal);
+  };
+
   return (
     <>
-      {props.users.map((user) => (
-        <GridContainer key={user.id}>
+      {profiles?.map((profile) => (
+        <GridContainer key={profile.user.id}>
           <GridItemPicture>
-            <ImgContainer src={user.default_picture} alt="user-picture" />
+            <ImgContainer
+              src={profile.user.default_picture}
+              alt="user-picture"
+            />
           </GridItemPicture>
-          <GridItem onClick={() => handleShowProfile(user.id)}>
-            <p>{`${user?.firstname} ${user.lastname}`}&nbsp;&#10095;</p>
+          <GridItem onClick={() => handleShowProfile(profile.user.id)}>
+            <p>
+              {`${profile.user?.firstname} ${profile.user.lastname}`}
+              &nbsp;&#10095;
+            </p>
           </GridItem>
         </GridContainer>
       ))}
@@ -160,7 +207,7 @@ const NotificationCard = (props: { users: UpdateUserInfoInterface[] }) => {
         >
           <Modal.Header closeButton>
             <Modal.Title className="gray-one">
-              {profile.firstname}'s profile
+              {profile.user.username}'s profile
             </Modal.Title>
           </Modal.Header>
           <Modal.Body>
@@ -169,22 +216,22 @@ const NotificationCard = (props: { users: UpdateUserInfoInterface[] }) => {
                 <CarouselWrapper>
                   <Carousel>
                     <Carousel.Item>
-                      {/* {profile?.pictures?.map((picture) => ( */}
-                      <div key={profile.id}>
-                        <img
-                          className="d-block w-100"
-                          src={
-                            profile?.default_picture?.startsWith('https')
-                              ? profile.default_picture
-                              : `${process.env.REACT_APP_API_URL}/uploads/${profile.default_picture}`
-                          }
-                          alt="First slide"
-                          width="300"
-                          height="500"
-                        />
-                        <Carousel.Caption></Carousel.Caption>
-                      </div>
-                      {/* ))} */}
+                      {profile?.pictures?.map((picture) => (
+                        <div key={picture.id}>
+                          <img
+                            className="d-block w-100"
+                            src={
+                              picture.file_path?.startsWith('https')
+                                ? picture.file_path
+                                : `${process.env.REACT_APP_API_URL}/uploads/${picture.file_path}`
+                            }
+                            alt="Profile picture"
+                            width="300"
+                            height="500"
+                          />
+                          <Carousel.Caption></Carousel.Caption>
+                        </div>
+                      ))}
                     </Carousel.Item>
                   </Carousel>
                 </CarouselWrapper>
@@ -195,7 +242,7 @@ const NotificationCard = (props: { users: UpdateUserInfoInterface[] }) => {
                       <img src={userNameIcon} alt="username" />
                     </TagsItem>
                     <TagsItem>
-                      {`${profile.firstname} ${profile.lastname}`}
+                      {`${profile.user.firstname} ${profile.user.lastname}`}
                     </TagsItem>
 
                     {/************  end user first and last name ************/}
@@ -213,7 +260,7 @@ const NotificationCard = (props: { users: UpdateUserInfoInterface[] }) => {
                       <img src={gender} alt="gender" />
                     </TagsItem>
                     <TagsItem>
-                      {profile.gender && capitalize(profile.gender)}
+                      {profile.user.gender && capitalize(profile.user.gender)}
                     </TagsItem>
                     {/************  end gender ************/}
 
@@ -222,8 +269,8 @@ const NotificationCard = (props: { users: UpdateUserInfoInterface[] }) => {
                       <img src={sexualOrientation} alt="sexualOrientation" />
                     </TagsItem>
                     <TagsItem>
-                      {profile.sexual_orientation &&
-                        capitalize(profile.sexual_orientation)}
+                      {profile.user.sexual_orientation &&
+                        capitalize(profile.user.sexual_orientation)}
                     </TagsItem>
                     {/************  start sexual orientation ************/}
 
@@ -270,12 +317,12 @@ const NotificationCard = (props: { users: UpdateUserInfoInterface[] }) => {
                         </defs>
                       </svg>
                     </TagsItem>
-                    <TagsItem>{popularity(profile.popularity)}</TagsItem>
+                    <TagsItem>{popularity(profile.user.popularity)}</TagsItem>
                     {/************  end score ************/}
 
                     {/************  start last seen ************/}
 
-                    {profile.is_connected ? (
+                    {profile.user.is_connected ? (
                       <>
                         <TagsItem marginBottom="8px">
                           <img src={connected} alt="connected" />
@@ -320,7 +367,10 @@ const NotificationCard = (props: { users: UpdateUserInfoInterface[] }) => {
                         </TagsItem>
                         <TagsItem>
                           Last seen&nbsp;
-                          {dateToStringFormat(profile.updated_at || '')}
+                          {formatDistanceToNow(
+                            new Date(profile.user.updated_at!),
+                            { addSuffix: true }
+                          )}
                         </TagsItem>
                       </>
                     )}
@@ -373,7 +423,9 @@ const NotificationCard = (props: { users: UpdateUserInfoInterface[] }) => {
                     <TagsItem marginBottom="8px">
                       <img src={userDescription} alt="userDescription" />
                     </TagsItem>
-                    <TagsItem>{aHundredLengthBio(profile.biography)}</TagsItem>
+                    <TagsItem>
+                      {aHundredLengthBio(profile.user.biography)}
+                    </TagsItem>
                     {/************  end biography ************/}
 
                     {/************  start tags ************/}
@@ -387,22 +439,14 @@ const NotificationCard = (props: { users: UpdateUserInfoInterface[] }) => {
                     </TagsItem>
                     {/************  end tags ************/}
                   </TagsGridContainer>
-                  {/* <Gap>&nbsp;</Gap>
-                  {!likesCurrentUser && <Gap>&nbsp;</Gap>} */}
-                  {/* <ButtonReportWarapper>
-                    <Button
-                      text="Report"
-                      margin="0 0 8px 0"
-                      callBack={handleReportUser}
-                    />
-                  </ButtonReportWarapper>
-                  <ButtonBlockWarapper>
-                    <Button
-                      text="Block"
-                      margin="0 0 0 0"
-                      callBack={handleBlockUser}
-                    />
-                  </ButtonBlockWarapper> */}
+                  <ButtonWarapper>
+                    <Button text="Send message" callBack={toggleSendMessage} />
+                  </ButtonWarapper>
+                  <SendMessage
+                    receiver={profile.user}
+                    callback={toggleSendMessage}
+                    showMessageModal={showModal}
+                  />
                 </ProfileInfo>
               </FlexBox>
             </ProfileWrapper>
