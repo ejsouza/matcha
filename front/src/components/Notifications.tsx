@@ -3,13 +3,27 @@ import { Carousel } from 'react-bootstrap';
 import styled from 'styled-components';
 import Bell from './Bell';
 import Loading from './Loading';
-import { getVisits } from 'api/visit';
-import { getUserMatches, UpdateUserInfoInterface } from 'api/user';
+import { useAppSelector } from 'store/hook';
+import { UserInterface } from 'interfaces';
+import { getVisits, setVisitToSeen } from 'api/visit';
+import {
+  getUserMatches,
+  UpdateUserInfoInterface,
+  getUserLikedBy,
+} from 'api/user';
 import { getMessages } from 'api/message';
+import { getLikesLikedBy, setLikeToSeen } from 'api/like';
+import {
+  getUnseenMatches,
+  deleteUnseenMatches,
+  MatchesInterface,
+} from 'api/match';
 import VisitCard from './VisitCard';
 import MatchesCard from './MatchesCard';
-import { SUCCESS } from 'utils/const';
+import LikesMe from './LikesMe';
+import { CREATED, SUCCESS } from 'utils/const';
 import DisplayMessageCard, { MessageInterface } from './DisplayMessageCard';
+import socket from 'socket/socket.io';
 
 const Container = styled.div`
   padding-left: 16px;
@@ -72,24 +86,35 @@ export interface VisitInterface {
   visited_at: Date;
 }
 
+interface LikeInterface {
+  id: number;
+  user_id: number;
+  liked_id: number;
+  seen: boolean;
+}
+
 const Notifications = (props: { notif: boolean }) => {
+  const user: UserInterface = useAppSelector((state) => state.user);
   const [index, setIndex] = useState(0);
   const [visits, setVisits] = useState<VisitInterface[]>();
   const [matches, setMatches] = useState<UpdateUserInfoInterface[]>();
   const [messages, setMessages] = useState<MessageInterface[]>();
+  const [likes, setLikes] = useState<LikeInterface[]>();
   const [unseenVisits, setUnseenVisits] = useState(0);
   const [unseenMessages, setUnseenMessages] = useState(0);
+  const [unseenLikes, setUnseenLikes] = useState(0);
+  const [unseenMatches, setUnseenMatches] = useState(0);
+  const [likedBy, setLikedBy] = useState<UpdateUserInfoInterface[]>();
 
   const handleSelect = (selectedIndex: number) => {
     setIndex(selectedIndex);
   };
-  const notificatons = ['Match', 'Msg', 'Visits'];
-  const prev = index - 1 === -1 ? 2 : index - 1;
-  const next = index + 1 === 3 ? 0 : index + 1;
+  const notificatons = ['Match', 'Msg', 'Visits', 'Likes'];
+  const prev = index - 1 === -1 ? 3 : index - 1;
+  const next = index + 1 === 4 ? 0 : index + 1;
 
   const getUserVisits = useCallback(async () => {
     const res = await getVisits();
-    console.log(res.status);
     if (res.status !== SUCCESS) {
       console.log(`session experied, need to logout user`);
       localStorage.clear();
@@ -116,6 +141,15 @@ const Notifications = (props: { notif: boolean }) => {
     setMatches(matchedUsers);
   }, [props.notif]);
 
+  const getUserUnseenMatches = useCallback(async () => {
+    const res = await getUnseenMatches();
+    if (res.status === SUCCESS) {
+      const json = await res.json();
+      const matches: MatchesInterface[] = json.matches;
+      setUnseenMatches(matches.length);
+    }
+  }, [props.notif]);
+
   const getUserMessages = useCallback(async () => {
     const res = await getMessages();
     const m = await res.json();
@@ -130,13 +164,131 @@ const Notifications = (props: { notif: boolean }) => {
     setMessages(msgs);
   }, [props.notif]);
 
+  const getLikedByUser = useCallback(async () => {
+    const res = await getUserLikedBy(user.id.toString());
+    const json = await res.json();
+    const likedBy: UpdateUserInfoInterface[] = json.users;
+    setLikedBy(likedBy);
+  }, [props.notif]);
+
+  const getLikesLikedCurrentUser = useCallback(async () => {
+    const res = await getLikesLikedBy(user.id);
+    const json = await res.json();
+    const likes: LikeInterface[] = json.likes;
+    setLikes(likes);
+    let count = 0;
+    likes.forEach((like) => {
+      if (!like.seen) {
+        count++;
+      }
+    });
+    setUnseenLikes(count);
+  }, [props.notif]);
+
   useEffect(() => {
     getUserVisits();
     getMatches();
     getUserMessages();
-  }, [getUserVisits, getMatches, getUserMatches]);
+    getLikedByUser();
+    getLikesLikedCurrentUser();
+    getUserUnseenMatches();
+  }, []);
 
-  return !visits || !matches || !messages ? (
+  useEffect(() => {
+    let isMounted = true;
+    socket.on('direct message', () => {
+      if (isMounted) {
+        getUserMessages();
+      }
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+    socket.on('visit', () => {
+      if (isMounted) {
+        getUserVisits();
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+    socket.on('like', () => {
+      if (isMounted) {
+        getLikesLikedCurrentUser();
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+    socket.on('match', () => {
+      if (isMounted) {
+        getUserUnseenMatches();
+      }
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const handleClick = async (index: number) => {
+    console.log(`handleClick(${index})`);
+    if (index === 0 && unseenMatches > 0) {
+      const res = await deleteUnseenMatches();
+      if (res.status === SUCCESS) {
+        socket.emit('match', user.username);
+      }
+    } else if (index === 2) {
+      let sawUnseenMessages = false;
+      if (visits) {
+        for (let visit of visits) {
+          if (!visit.seen) {
+            const res = await setVisitToSeen(
+              visit.visitor_id,
+              visit.visitee_id
+            );
+            if (res.status === CREATED) {
+              sawUnseenMessages = true;
+            }
+          }
+        }
+        if (sawUnseenMessages) {
+          socket.emit('visit', user.username);
+        }
+      }
+    } else if (index === 3) {
+      if (likes) {
+        let sawUnseenLikes = false;
+        for (let like of likes) {
+          if (!like.seen) {
+            const res = await setLikeToSeen(like.id);
+            if (res.status === CREATED) {
+              sawUnseenLikes = true;
+            }
+          }
+        }
+        if (sawUnseenLikes) {
+          socket.emit('like', user.username);
+        }
+      }
+    }
+  };
+
+  return !visits || !matches || !messages || !likedBy ? (
     <LoadingContainer>
       <Loading />
     </LoadingContainer>
@@ -150,10 +302,10 @@ const Notifications = (props: { notif: boolean }) => {
           indicators={false}
           prevIcon={
             <WrapTitle>
-              <TitlePrev>
+              <TitlePrev onClick={() => handleClick(prev)}>
                 {notificatons[prev]}&nbsp;
-                {prev === 0 && matches.length > 0 && (
-                  <Bell width="16" height="20" count={matches.length} />
+                {prev === 0 && unseenMatches > 0 && (
+                  <Bell width="16" height="20" count={unseenMatches} />
                 )}
                 {prev === 1 && unseenMessages > 0 && (
                   <Bell width="16" height="20" count={unseenMessages} />
@@ -161,21 +313,27 @@ const Notifications = (props: { notif: boolean }) => {
                 {prev === 2 && unseenVisits > 0 && (
                   <Bell width="16" height="20" count={unseenVisits} />
                 )}
+                {prev === 3 && unseenLikes > 0 && (
+                  <Bell width="16" height="20" count={unseenLikes} />
+                )}
               </TitlePrev>
             </WrapTitle>
           }
           nextIcon={
             <WrapTitle>
-              <TitleNext>
+              <TitleNext onClick={() => handleClick(next)}>
                 {notificatons[next]}&nbsp;
-                {next === 0 && matches.length > 0 && (
-                  <Bell width="16" height="20" count={matches.length} />
+                {next === 0 && unseenMatches > 0 && (
+                  <Bell width="16" height="20" count={unseenMatches} />
                 )}
                 {next === 1 && unseenMessages > 0 && (
                   <Bell width="16" height="20" count={unseenMessages} />
                 )}
                 {next === 2 && unseenVisits > 0 && (
                   <Bell width="16" height="20" count={unseenVisits} />
+                )}
+                {next === 3 && unseenLikes > 0 && (
+                  <Bell width="16" height="20" count={unseenLikes} />
                 )}
               </TitleNext>
             </WrapTitle>
@@ -219,6 +377,22 @@ const Notifications = (props: { notif: boolean }) => {
               ) : (
                 <>
                   <VisitCard visitors={visits} />
+                </>
+              )}
+            </Wrapper>
+          </Carousel.Item>
+          <Carousel.Item>
+            <Wrapper>
+              <ActiveTitle>
+                <hr />
+
+                <h6>Liked you</h6>
+              </ActiveTitle>
+              {likedBy?.length === 0 ? (
+                <p>No likes here!</p>
+              ) : (
+                <>
+                  <LikesMe users={likedBy} />
                 </>
               )}
             </Wrapper>
