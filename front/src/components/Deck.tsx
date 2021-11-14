@@ -11,10 +11,12 @@ import { getUsers, UpdateUserInfoInterface } from 'api/user';
 import { CREATED, SUCCESS } from 'utils/const';
 import { aHundredLengthBio } from 'utils/user';
 import { likeProfile, getLikesByUserId, dislikeProfile } from 'api/like';
+import { createUnseenMatch } from 'api/match';
 import { UserInterface } from 'interfaces';
 import { FlexBox, Gap } from 'globalStyled';
 import Button from './Button';
 import MessageCard from './MessageCard';
+import socket from 'socket/socket.io';
 
 interface TagInterface {
   id: number;
@@ -202,6 +204,38 @@ const Deck = () => {
             setMatchedProfile(currentUserCard);
             handleShowMatch();
             console.log(`IS A MATCH...${isMatch}`);
+            /**
+             * Here we sent the matched username to be notified.
+             * The current user dosn't need to be notified as s/he
+             * already saw the match.
+             */
+            socket.emit('match', currentUserCard.username);
+
+            /**
+             * When received this event 'match' on the header
+             * we should call to check for unseen match created right
+             * below, maybe some delay need to be handled.
+             */
+
+            const resMatch = await createUnseenMatch(currentUserCard.id);
+            if (resMatch.status === CREATED) {
+              console.log('created a new match!');
+            } else {
+              /**
+               * WARNING
+               * Probably here we need a to emit a new event
+               * not yet created for unseen matches.
+               * This match here is only for showing on the header.
+               */
+              console.log(
+                `somehting went wrong creating new match! [${resMatch.status}]`
+              );
+            }
+          } else {
+            /**
+             * Emit event to inform currentUser s/he has a like
+             */
+            socket.emit('like', currentUserCard.username);
           }
         } else {
           const error = await res.json();
