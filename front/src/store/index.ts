@@ -31,7 +31,12 @@ export const user: UserInterface = {
   sexual_orientation: 'bisexual',
   username: '',
   default_picture: '',
+  popularity: 0,
   is_connected: 0,
+  reported: false,
+  distance_preference: 100,
+  age_preference_min: 18,
+  age_preference_max: 45,
 };
 
 const initialState = {
