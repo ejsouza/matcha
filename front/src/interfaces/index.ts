@@ -15,7 +15,12 @@ export interface UserInterface {
   modified: number | null;
   sexual_orientation: string;
   default_picture: string;
+  popularity: number;
   is_connected: number;
+  reported: boolean;
+  distance_preference: number;
+  age_preference_min: number;
+  age_preference_max: number;
   created_at: Date;
   updated_at: Date;
 }
