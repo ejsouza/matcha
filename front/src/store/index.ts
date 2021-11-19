@@ -34,9 +34,9 @@ export const user: UserInterface = {
   popularity: 0,
   is_connected: 0,
   reported: false,
-  distance_preference: 100,
-  age_preference_min: 18,
-  age_preference_max: 45,
+  distance_preference: 0,
+  age_preference_min: 0,
+  age_preference_max: 0,
 };
 
 const initialState = {
