@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Col, Row, Modal, Form } from 'react-bootstrap';
+import debounce from 'lodash.debounce';
 import UpdateLink from './desktop/UpdateLink';
 import { useAppDispatch, useAppSelector } from 'store/hook';
 import { UserInterface } from 'interfaces';
@@ -9,6 +10,10 @@ import ShowMap from './ShowMap';
 import Passions from './Passions';
 import Pictures from './Pictures';
 import RangeSlider from './rangeSlider';
+import DoubleRangeSlider from './rangeSlider/doubleRangeSlider';
+import AgePreferenceSlider from './AgePreferenceSlider';
+import DistancePreference from './DistancePreference';
+import Loading from './Loading';
 import { Gap } from 'globalStyled';
 import { Button } from 'react-bootstrap';
 import AccountSettingHeaderDesktop from 'components/desktop/AccountSettingHeaderDesktop';
@@ -20,7 +25,6 @@ import { updateUserInfo, UpdateUserInfoInterface } from 'api/user';
 import socket, { SessionInterface } from 'socket/socket.io';
 import { removeSessionFromLocalStorage } from 'utils/session';
 import styled from 'styled-components';
-import ProfileHeaderDesktop from 'components/desktop/ProfileHeaderDesktop';
 
 const DiscoveryArea = styled.div`
   padding: 1vh 1vh;
@@ -31,6 +35,11 @@ const DiscoveryArea = styled.div`
 `;
 
 const SideBarScrollable = styled.div``;
+
+interface RangeInterface {
+  min: number;
+  max: number;
+}
 
 const Settings = () => {
   const dispatch = useAppDispatch();
@@ -133,10 +142,30 @@ const Settings = () => {
     }
   };
 
-  const sliderCallBack = (min: number, max: number) => {
-    console.log(`changing range from ${min} to ${max}`);
+  const distancePreferenceHandler = (range: RangeInterface) => {
+    console.log(`distancePreferenceHandler(${range.min} to ${range.max})`);
   };
-  return (
+  const debounceDistancePreferenceHandler = useMemo(
+    () => debounce(distancePreferenceHandler, 300),
+    []
+  );
+
+  const agePreferenceHandler = (range: RangeInterface) => {
+    // console.log(`agePreferenceHandler(${range.min} to ${range.max})`);
+  };
+  const debounceAgePreferenceHandler = useMemo(
+    () => debounce(agePreferenceHandler, 300),
+    []
+  );
+
+  useEffect(() => {
+    console.log(
+      `ComponentDidMount(TARGET) [${user.age_preference_min}] [${user.age_preference_max}]`
+    );
+  }, []);
+  return !user ? (
+    <Loading />
+  ) : (
     <>
       {/* Message success modal */}
       <Modal show={message}>
@@ -204,15 +233,17 @@ const Settings = () => {
         <Hr />
         <ShowMap />
         <Hr />
-        <RangeSlider
-          min={0}
-          max={100}
+        {/* <RangeSlider
+          min={1}
+          max={user.distance_preference}
+          maxRange={1000}
           doubleRange={false}
           title="Distance preference"
           onChange={({ min, max }: { min: number; max: number }) =>
-            console.log(`min = ${min}, max = ${max}`)
+            debounceDistancePreferenceHandler({ min, max })
           }
-        />
+        /> */}
+        <DistancePreference />
         <Hr />
         <UpdateLink
           title="Looking for"
@@ -222,15 +253,7 @@ const Settings = () => {
           setEvent={handleShow}
         />
         <Hr />
-        <RangeSlider
-          min={18}
-          max={100}
-          doubleRange={true}
-          title="Age preference"
-          onChange={({ min, max }: { min: number; max: number }) =>
-            console.log(`min = ${min}, max = ${max}`)
-          }
-        />
+        <AgePreferenceSlider />
         <Hr />
 
         <Passions />
