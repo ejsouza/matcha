@@ -17,11 +17,18 @@ import Loading from './Loading';
 import { Gap } from 'globalStyled';
 import { Button } from 'react-bootstrap';
 import AccountSettingHeaderDesktop from 'components/desktop/AccountSettingHeaderDesktop';
-import { LOGGED_USER, PASS_REGEX, CREATED, USER_TOKEN } from 'utils/const';
+import {
+  LOGGED_USER,
+  PASS_REGEX,
+  CREATED,
+  USER_TOKEN,
+  SUCCESS,
+} from 'utils/const';
 import { lookingFor } from 'utils/user';
+import { isProfileComplete } from 'utils/accountRequiredInfo';
 import { user as userInitialState } from 'store';
 import { isLoggedUpdated, userInfoUpdated } from 'store/actions';
-import { updateUserInfo, UpdateUserInfoInterface } from 'api/user';
+import { getUser, updateUserInfo, UpdateUserInfoInterface } from 'api/user';
 import socket, { SessionInterface } from 'socket/socket.io';
 import { removeSessionFromLocalStorage } from 'utils/session';
 import styled from 'styled-components';
@@ -65,6 +72,21 @@ const Settings = () => {
   const activateShowChangePassword = () => setShowChangePassword(true);
 
   useEffect(() => {
+    // if (user.id && !user.activated && !show) {
+    //   setShow(true);
+    // }
+    (async () => {
+      const res = await getUser();
+      if (res.status === SUCCESS) {
+        const currentUserState: UserInterface = await res.json();
+        console.log(`currentUserState := ${currentUserState.firstname} `);
+        if (!isProfileComplete(currentUserState)) {
+          setShow(true);
+        }
+      }
+    })();
+  }, [user, show]);
+  useEffect(() => {
     if (user) {
       setUserName(user.username);
       setEmail(user.email);
@@ -74,6 +96,7 @@ const Settings = () => {
       setBirthDate(user.birthdate);
       setDescription(user.biography);
       setSexualOrientation(user.sexual_orientation);
+      console.log(`default_picture ? ${user.default_picture}`);
     }
   }, [user]);
 
@@ -100,10 +123,13 @@ const Settings = () => {
     if (birthDate) {
       usr.birthdate = new Date(birthDate);
     }
-    if (userName && userName !== user.username) {
+    if (userName && userName.length > 2 && userName !== user.username) {
       usr.username = userName;
     }
-    if (lastName && lastName !== user.lastname) {
+    if (firstName && firstName.length > 2 && firstName !== user.firstname) {
+      usr.firstname = firstName;
+    }
+    if (lastName && lastName.length > 2 && lastName !== user.lastname) {
       usr.lastname = lastName;
     }
     if (email && email !== user.email) {
@@ -124,6 +150,17 @@ const Settings = () => {
         if (res?.status === CREATED) {
           const response = await res.json();
           const userData: UserInterface = response.user;
+
+          const userBeforeUpdate: UserInterface = JSON.parse(
+            localStorage.getItem(LOGGED_USER)!
+          );
+          if (
+            userBeforeUpdate.sexual_orientation !==
+              userData.sexual_orientation ||
+            userBeforeUpdate.gender !== userData.gender
+          ) {
+            socket.emit('user updated', userData.username);
+          }
 
           dispatch(userInfoUpdated({ ...userData }));
           localStorage.setItem(LOGGED_USER, JSON.stringify(userData));
@@ -158,11 +195,6 @@ const Settings = () => {
     []
   );
 
-  useEffect(() => {
-    console.log(
-      `ComponentDidMount(TARGET) [${user.age_preference_min}] [${user.age_preference_max}]`
-    );
-  }, []);
   return !user ? (
     <Loading />
   ) : (
@@ -233,16 +265,6 @@ const Settings = () => {
         <Hr />
         <ShowMap />
         <Hr />
-        {/* <RangeSlider
-          min={1}
-          max={user.distance_preference}
-          maxRange={1000}
-          doubleRange={false}
-          title="Distance preference"
-          onChange={({ min, max }: { min: number; max: number }) =>
-            debounceDistancePreferenceHandler({ min, max })
-          }
-        /> */}
         <DistancePreference />
         <Hr />
         <UpdateLink
@@ -296,6 +318,7 @@ const Settings = () => {
                 type="text"
                 placeholder="User name"
                 value={userName}
+                isInvalid={userName.length > 2 ? false : true}
                 className="gray-one"
                 onChange={(e) => setUserName(e.target.value)}
               />
@@ -306,6 +329,7 @@ const Settings = () => {
                 type="text"
                 placeholder="First name"
                 value={firstName}
+                isInvalid={firstName.length > 2 ? false : true}
                 className="gray-one"
                 onChange={(e) => setFirstName(e.target.value)}
               />
@@ -316,6 +340,7 @@ const Settings = () => {
                 type="text"
                 placeholder="Last name"
                 value={lastName}
+                isInvalid={lastName.length > 2 ? false : true}
                 className="gray-one"
                 onChange={(e) => setLastName(e.target.value)}
               />
@@ -324,7 +349,14 @@ const Settings = () => {
               <Form.Label>Birthday</Form.Label>
               <Form.Control
                 type="date"
-                placeholder="Last name"
+                isInvalid={birthDate ? false : true}
+                value={
+                  birthDate
+                    ? new Date(birthDate).toISOString().substring(0, 10)
+                    : new Date('1970-01-01').toISOString().substring(0, 10)
+                }
+                min={'1903-01-01'}
+                max={'2003-11-20'}
                 className="gray-one"
                 onChange={(e) => setBirthDate(e.target.value)}
               />
@@ -334,6 +366,7 @@ const Settings = () => {
               <Form.Check
                 inline
                 value="female"
+                isInvalid={gender?.length ? false : true}
                 type="radio"
                 label="Female"
                 name="formRadios"
@@ -344,6 +377,7 @@ const Settings = () => {
               <Form.Check
                 inline
                 value="male"
+                isInvalid={gender?.length ? false : true}
                 type="radio"
                 label="Male"
                 name="formRadios"
@@ -375,6 +409,7 @@ const Settings = () => {
                 placeholder="Description"
                 value={description || ''}
                 className="gray-one"
+                isInvalid={description?.length > 0 ? false : true}
                 onChange={(e) => setDescription(e.target.value)}
               />
             </Form.Group>
