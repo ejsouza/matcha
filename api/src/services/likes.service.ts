@@ -25,6 +25,7 @@ class LikeService {
     const like: CreateLikeDto = {
       user_id: Number(userId),
       liked_id: Number(likedId),
+      seen: false,
     };
     const res = await likesRepository.addUserLike(like);
     const count = res.rowCount;
@@ -47,6 +48,11 @@ class LikeService {
       await usersService.decreaseUserPopularity(Number(dislikedId));
     }
     return count;
+  }
+
+  async seen(id: number) {
+    const res = await likesRepository.seen(id);
+    return res.rowCount;
   }
 }
 

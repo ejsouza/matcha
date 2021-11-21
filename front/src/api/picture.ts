@@ -1,7 +1,5 @@
 import { API_BASE_URL } from 'utils/config';
-import { USER_TOKEN } from 'utils/const';
 import { getUserTokenFromLocalStorage } from 'utils/user';
-import { UpdateUserInfoInterface } from './user';
 
 const upload = async (file: File) => {
   let formData = new FormData();

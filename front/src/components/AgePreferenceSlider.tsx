@@ -127,12 +127,18 @@ const AgePreferenceSlider = () => {
         })();
       }
     }
-  }, [values]);
+  }, [
+    values,
+    user.age_preference_min,
+    user.age_preference_max,
+    user.username,
+    dispatch,
+  ]);
 
   useEffect(() => {
     minRef.current = user.age_preference_min;
     maxRef.current = user.age_preference_max;
-  }, []);
+  }, [user.age_preference_min, user.age_preference_max]);
 
   const { getTrackProps, ticks, segments, handles } = useRanger({
     min: 18,

@@ -33,6 +33,12 @@ class ChatRepository {
       resource.sent_at,
     ]);
   }
+
+  async setSeen(chatId: number) {
+    const query = 'UPDATE chats SET seen=true WHERE id=$1';
+
+    return db.query(query, [chatId]);
+  }
 }
 
 export default new ChatRepository();

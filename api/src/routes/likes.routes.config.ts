@@ -42,6 +42,16 @@ export class LikeRoutes extends CommonRoutesConfig {
         likesController.addUserDislike
       );
 
+      this.app
+        .route(`/likes/:userId/liked-by`)
+        .all(userMiddleware.validateUserExists, tokenMiddleware.containValidJWT)
+        .get(likesController.getLikedBy);
+
+      this.app
+        .route(`/likes/:id/seen`)
+        .all(tokenMiddleware.containValidJWT)
+        .patch(likesController.seen);
+   
     return this.app;
   }
 }

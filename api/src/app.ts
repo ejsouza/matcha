@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import * as winston from 'winston';
 import * as expressWinston from 'express-winston';
 import cors from 'cors';
+// import { Server } from 'socket.io';
 import { CommonRoutesConfig } from './common/common.routes.config';
 import { UserRoutes } from './routes/users.routes.config';
 import { AuthRoutes } from './routes/auth.routes.config';
@@ -14,6 +15,11 @@ import { BlockUserRoutes } from './routes/blockUser.routes.config';
 import { ReportUserRoutes } from './routes/reportUser.routes.config';
 import { VisitUserProfileRoutes } from './routes/visitUserProfile.routes.config';
 import { MessageRoutes } from './routes/messages.routes.config';
+import { ChatRoutes } from './routes/chats.routes.config';
+import { MatchRoutes } from './routes/match.routes.config';
+import { AccountRoutes } from './routes/account.routes.config';
+import {PasswordRoutes} from './routes/password.routes.config'
+import socketIo from './socket/socket.io';
 import debug from 'debug';
 
 /**
@@ -25,10 +31,19 @@ import debug from 'debug';
 dotenv.config();
 
 const app: express.Application = express();
-const server: http.Server = http.createServer(app);
+const httpServer: http.Server = http.createServer(app);
 const PORT = process.env.PORT || 8000;
 const routes: Array<CommonRoutesConfig> = [];
 const debugLog: debug.IDebugger = debug('app');
+
+
+
+// export const io = new Server(httpServer, {
+//   serveClient: false,
+//   cors: {
+//     origin: 'http://localhost:3000',
+//   },
+// });
 
 app.use(express.json());
 /**
@@ -66,6 +81,10 @@ routes.push(new BlockUserRoutes(app));
 routes.push(new ReportUserRoutes(app));
 routes.push(new VisitUserProfileRoutes(app));
 routes.push(new MessageRoutes(app));
+routes.push(new ChatRoutes(app));
+routes.push(new MatchRoutes(app));
+routes.push(new AccountRoutes(app));
+routes.push(new PasswordRoutes(app));
 
 // this is a simple route to make sure everything is working properly
 const runningMessage = `Server running at http://localhost:${PORT}`;
@@ -73,26 +92,28 @@ app.get('/', (req: express.Request, res: express.Response) => {
   res.status(200).send(runningMessage);
 });
 
-server.listen(PORT, async () => {
+httpServer.listen(PORT, async () => {
   routes.forEach((route: CommonRoutesConfig) => {
     debugLog(`Routes configured for ${route.getName()}`);
   });
-  // let retries = 10;
-  // while (retries) {
-  //   try {
-  //     // db.runMigrations();
-  //     const client = await db.connect();
-  //     await client.query('SELECT  NOW()');
-  //     client.release();
-  //     break;
-  //   } catch (err) {
-  //     retries--;
-  //     console.log(`retries left := ${retries}`);
-  //     // wait 5 seconds
-  //     await new Promise((res) => setTimeout(res, 5000));
-  //   }
-  // }
   // our only exception to avoiding console.log(), because we
   // always want to know when the server is done starting up
   console.log(runningMessage);
 });
+/**
+ * SOCKET
+ */
+// socketIo;
+
+/**
+ * Socket.io
+ */
+
+ const socket = new socketIo(httpServer);
+
+// io.use((socket, next) => {
+//   console.log(
+//     `HERE(app.ts)  socket.id := ${socket.id} - ${socket.handshake.auth}`
+//   );
+//   next();
+// });

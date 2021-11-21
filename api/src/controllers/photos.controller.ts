@@ -34,6 +34,11 @@ class PhotoController {
   async update(req: express.Request, res: express.Response) {
     const userId = retrieveUserIdFromToken(req);
     const path = req.body.file_path;
+    if (!path) {
+      return res
+        .status(400)
+        .json({ success: false, error: 'Missing file_path in body.' });
+    }
     const count = await photosService.updateDefaultPicture(
       Number(userId),
       path

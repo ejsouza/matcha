@@ -4,12 +4,12 @@ import { CreateVisitUserProfileDto } from '../dto/visits/createvisitUserProfile.
 class VisitUserProfileRepository {
   async create(resource: CreateVisitUserProfileDto) {
     const query =
-      'INSERT INTO visits (visitee_id, visitor_id, seen_visit, visited_at) VALUES($1, $2, $3, $4)';
+      'INSERT INTO visits (visitee_id, visitor_id, seen, visited_at) VALUES($1, $2, $3, $4)';
 
     return db.query(query, [
       resource.visitee_id,
       resource.visitor_id,
-      resource.seen_visit,
+      resource.seen,
       resource.visited_at,
     ]);
   }
@@ -27,20 +27,20 @@ class VisitUserProfileRepository {
   }
 
   async update(visitId: number) {
-    const query = 'UPDATE visits SET seen_visit=$1 WHERE id=$2';
+    const query = 'UPDATE visits SET seen=$1 WHERE id=$2';
 
     return db.query(query, [true, visitId]);
   }
 
   async put(visitId: number, resource: CreateVisitUserProfileDto) {
     const query =
-      'UPDATE visits SET visitee_id=$2, visitor_id=$3, seen_visit=$4, visited_at=$5 WHERE id=$1';
+      'UPDATE visits SET visitee_id=$2, visitor_id=$3, seen=$4, visited_at=$5 WHERE id=$1';
 
     return db.query(query, [
       visitId,
       resource.visitee_id,
       resource.visitor_id,
-      resource.seen_visit,
+      resource.seen,
       resource.visited_at,
     ]);
   }

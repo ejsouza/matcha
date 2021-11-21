@@ -17,7 +17,11 @@ CREATE TABLE  users (
 	default_picture VARCHAR(255),
 	is_connected INT DEFAULT 0,
 	popularity SMALLINT DEFAULT 0,
-	reported BOOLEAN DEFAULT FALSE
+	reported BOOLEAN DEFAULT FALSE,
+	distance_preference INT DEFAULT 100,
+	age_preference_min INT DEFAULT 18,
+	age_preference_max INT DEFAULT 45,
+	rate INT DEFAULT 0
 );
 
 -- DROP TABLE IF EXISTS pictures;
@@ -37,8 +41,10 @@ CREATE TABLE tags (
 
 -- DROP TABLE IF EXISTS likes;
 CREATE TABLE likes (
+	id SERIAL PRIMARY KEY,
 	user_id INT,
-	liked_id INT
+	liked_id INT,
+	seen BOOLEAN DEFAULT FALSE
 );
 
 -- DROP TABLE IF EXISTS dislikes;
@@ -76,4 +82,21 @@ CREATE TABLE messages (
 	message VARCHAR(255),
 	seen BOOLEAN DEFAULT FALSE,
 	sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- DROP TABLE IF EXISTS chats;
+CREATE TABLE chats (
+	id SERIAL PRIMARY KEY,
+	sender_id INT,
+	receiver_id INT,
+	text VARCHAR(255),
+	seen BOOLEAN DEFAULT FALSE,
+	sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- DROP TABLE IF EXISTS matches;
+CREATE TABLE matches (
+	id SERIAL PRIMARY KEY,
+	user_id INT,
+	seen BOOLEAN DEFAULT FALSE
 );

@@ -1,7 +1,6 @@
 import db from '../../db';
 import { CreateUserDto } from '../dto/users/create.user.dto';
 import { PatchUserDto } from '../dto/users/patch.user.dto';
-import { PutUserDto } from '../dto/users/put.user.dto';
 import debug from 'debug';
 
 const log: debug.IDebugger = debug('app:User-repository');
@@ -71,6 +70,13 @@ class UserRepository {
     return db.query(query, [username]);
   }
 
+  async updateLastSeen(userId: number) {
+    const date = new Date();
+    const query = 'UPDATE users SET updated_at = $2 WHERE id = $1';
+
+    return db.query(query, [userId, date]);
+  }
+
   async patchUser(userId: string, user: PatchUserDto) {
     let prepare = ['UPDATE users'];
     prepare.push('SET');
@@ -112,6 +118,19 @@ class UserRepository {
     return db.query(query, values);
   }
 
+  async patchUserAgePreferences(userId: number, min: number, max: number) {
+    const query =
+      'UPDATE users SET age_preference_min = $2, age_preference_max = $3  WHERE id = $1';
+
+    return db.query(query, [userId, min, max]);
+  }
+
+  async patchUserDistancePreferences(userId: number, distance: number) {
+    const query = 'UPDATE users SET distance_preference=$2 WHERE id = $1';
+
+    return db.query(query, [userId, distance]);
+  }
+
   async increaseUserPopularity(userId: number, popularity: number) {
     const query = 'UPDATE users SET popularity=$1 WHERE id=$2';
     return db.query(query, [popularity, userId]);
@@ -120,6 +139,23 @@ class UserRepository {
   async decreaseUserPopularity(userId: number, popularity: number) {
     const query = 'UPDATE users SET popularity=$1 WHERE id=$2';
     return db.query(query, [popularity, userId]);
+  }
+
+  async status(userId: number, status: number) {
+    const query = 'UPDATE users SET is_connected=$1 WHERE id=$2';
+    return db.query(query, [status, userId]);
+  }
+
+  async updateUserAccountActiveState(userId: number, status: boolean) {
+    const query = 'UPDATE users SET activated=$2 WHERE id=$1';
+
+    return db.query(query, [userId, status]);
+  }
+
+  async resetPassword(userId: number, password: string) {
+    const query = 'UPDATE users SET password=$2 WHERE id=$1';
+
+    return db.query(query, [userId, password]);
   }
 
   async deleteUser(userId: string) {

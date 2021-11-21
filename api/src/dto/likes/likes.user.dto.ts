@@ -32,14 +32,9 @@ export const MapUsersLikedMeDto = async (
       (dislike) => dislike.disliked_id === user.user_id
     );
 
-    console.log(
-      `likesMe[${user.liked_id}] := ${user.user_id} :: isMatch := ${isMatch} :: disliked := ${disliked}`
-    );
-
     if (!isMatch && !disliked) {
       filteredLikes.push(user);
     }
   });
-  console.log(`<<---------- [END] -------->>`);
   return filteredLikes;
 };

@@ -14,12 +14,14 @@ export const MapUserMatchesDto = async (
   );
   const blockedUsers = await blockUserService.listBlockedByUser(Number(userId));
   const likedUsers = await likeService.getUserLikes(userId);
+  const dislikedUsers = await likeService.getUserDislikes(userId);
 
   matches = matches.filter(
     (matche) =>
       !reportedUsers.find((reported) => reported.reported_id === matche.id) &&
       !blockedUsers.find((blocked) => blocked.blocked_id === matche.id) &&
-      !likedUsers.find((liked) => liked.liked_id === matche.id)
+      !likedUsers.find((liked) => liked.liked_id === matche.id) &&
+      !dislikedUsers.find((disliked) => disliked.disliked_id === matche.id)
   );
   return matches;
 };

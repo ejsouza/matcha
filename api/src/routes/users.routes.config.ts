@@ -15,7 +15,6 @@ export class UserRoutes extends CommonRoutesConfig {
       .get(
         tokenMiddleware.containValidJWT,
         tokenMiddleware.extractUserIdFromToken,
-        userMiddleware.extractUserId,
         userController.getMatchingUsers
       )
       .post(
@@ -46,10 +45,31 @@ export class UserRoutes extends CommonRoutesConfig {
         tokenMiddleware.validJWTNeeded,
         userController.patchUserCoordinates
       );
-      this.app
-        .route(`/users/:userId/matches`)
-        .all(userMiddleware.validateUserExists)
-        .get(userController.getUserMatches);
+    this.app
+      .route(`/users/:userId/matches`)
+      .all(userMiddleware.validateUserExists)
+      .get(userController.getUserMatches);
+
+    this.app
+      .route(`/users/:userId/all-details`)
+      .all(userMiddleware.validateUserExists)
+      .get(userController.getUserAllDetails);
+
+    this.app
+      .route(`/users/:userId/liked-by`)
+      .all(userMiddleware.validateUserExists, tokenMiddleware.containValidJWT)
+      .get(userController.getUserLikedBy);
+
+    this.app
+      .route(`/users/:userId/age-preferences`)
+      .all(userMiddleware.validateUserExists, tokenMiddleware.containValidJWT)
+      .patch(userController.patchUserAgePreferences);
+
+    this.app
+      .route(`/users/:userId/distance-preferences`)
+      .all(userMiddleware.validateUserExists, tokenMiddleware.containValidJWT)
+      .patch(userController.patchUserDistancePreferences);
+
     return this.app;
   }
 }

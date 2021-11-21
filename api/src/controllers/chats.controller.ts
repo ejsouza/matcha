@@ -44,6 +44,7 @@ class ChatController {
 
     res.status(200).json({ chats });
   }
+
   async create(req: express.Request, res: express.Response) {
     const { sender_id, receiver_id, text } = req.body;
 
@@ -56,6 +57,23 @@ class ChatController {
 
     if (count > 0) {
       return res.status(201).json({ success: true, message: 'Chat sent' });
+    } else {
+      return res.status(403).send();
+    }
+  }
+
+  async setSeen(req: express.Request, res: express.Response) {
+    const chatId = req.params.id;
+    console.log(`setSeen(${chatId})`);
+    if (!chatId) {
+      return res
+        .status(400)
+        .json({ success: false, message: 'Missing chatId' });
+    }
+    const count = await chatService.setSeen(Number(chatId));
+
+    if (count > 0) {
+      return res.status(201).json({ success: true, message: 'Chat seen' });
     } else {
       return res.status(403).send();
     }

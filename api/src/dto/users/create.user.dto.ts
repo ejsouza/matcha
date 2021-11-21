@@ -1,5 +1,9 @@
 import tagsService from '../../services/tags.service';
 import photosService from '../../services/photos.service';
+import { CreateLikeDto } from '../likes/create.like.dto';
+import { CreateVisitUserProfileDto } from '../visits/createvisitUserProfile.dto';
+import { CreateTagDto } from '../tags/create.tag.dto';
+import { CreateMessageDto } from '../messages/create.message.dto';
 
 export interface CreateUserDto {
   id: number;
@@ -10,6 +14,7 @@ export interface CreateUserDto {
   password: string;
   gender?: string;
   sexual_orientation?: string;
+  birthdate?: Date;
   biography?: string;
   localisation?: {
     x: number;
@@ -21,9 +26,14 @@ export interface CreateUserDto {
   default_picture?: string;
   is_connected?: number;
   popularity?: number;
+  reported?: boolean;
+  distance_preference?: number;
+  age_preference_min?: number;
+  age_preference_max?: number;
+  rate?: number;
 }
 
-interface UserDto extends CreateUserDto {
+export interface UserDto extends CreateUserDto {
   tags: {
     id: number;
     user_id?: number;
@@ -40,7 +50,14 @@ interface UserPicturesDto {
   path: string;
 }
 
-interface UserMapedDto extends CreateUserDto, UserDto, UserPicturesDto {}
+export interface UserMapedDto {
+  user: CreateUserDto;
+  likes: CreateLikeDto[];
+  visits: CreateVisitUserProfileDto[];
+  tags: CreateTagDto[];
+  pictures: UserPicturesDto[];
+  messages: CreateMessageDto[];
+}
 
 export const MapUserDto = async (data: CreateUserDto[]) => {
   return Promise.all(

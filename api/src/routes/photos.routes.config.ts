@@ -49,19 +49,20 @@ export class PhotoRoutes extends CommonRoutesConfig {
   configureRoutes() {
     this.app
       .route(`/photos`)
-      .get(tokenMiddleware.containValidJWT, photoController.listUserPhotos)
+      .all(tokenMiddleware.containValidJWT)
+      .get(photoController.listUserPhotos)
       .post(
-        tokenMiddleware.containValidJWT,
         upload.single('uploaded_file'),
         photoMiddleware.photoMimetype,
         photoController.upload
       )
-      .patch(tokenMiddleware.validJWTNeeded, photoController.update);
+      .patch(photoController.update);
 
     this.app
       .route(`/photos/:id`)
-      .get(tokenMiddleware.containValidJWT, photosController.getById)
-      .delete(tokenMiddleware.containValidJWT, photosController.delete);
+      .all(tokenMiddleware.containValidJWT)
+      .get(photosController.getById)
+      .delete(photosController.delete);
 
     return this.app;
   }

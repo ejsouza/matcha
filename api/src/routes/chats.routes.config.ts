@@ -18,6 +18,11 @@ export class ChatRoutes extends CommonRoutesConfig {
       .get(chatController.list)
       .post(chatController.create);
 
+      this.app
+        .route('/chat/:id')
+        .all(tokenMiddleware.containValidJWT)
+        .patch(chatController.setSeen);
+
     this.app
       .route('/chat/:userId/received')
       .all(tokenMiddleware.containValidJWT)

@@ -26,6 +26,11 @@ class LikeRepository {
     const query = 'INSERT INTO dislikes(user_id, disliked_id) VALUES($1, $2)';
     return db.query(query, [dislike.user_id, dislike.disliked_id]);
   }
+
+  async seen(id: number) {
+    const query = 'UPDATE likes SET seen = $2 WHERE id = $1';
+    return db.query(query, [id, true]);
+  }
 }
 
 export default new LikeRepository();

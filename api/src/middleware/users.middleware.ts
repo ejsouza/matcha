@@ -1,6 +1,7 @@
 import express from 'express';
 import userService from '../services/users.service';
 import debug from 'debug';
+import { PASS_REGEX, EMAIL_REGEX } from '../config/const';
 
 const log: debug.IDebugger = debug('app:users-middleware');
 
@@ -18,6 +19,16 @@ class UserMiddleware {
       req.body.email &&
       req.body.password
     ) {
+      if (!EMAIL_REGEX.test(req.body.email)) {
+        return res.status(400).send({
+          error: `Invalid email address`,
+        });
+      }
+      if (!PASS_REGEX.test(req.body.password)) {
+        return res.status(400).send({
+          error: `Password should be at least 8 characters long, including upper and lower letters, numbers and symbols`,
+        });
+      }
       next();
     } else {
       res.status(400).send({
@@ -31,6 +42,12 @@ class UserMiddleware {
     res: express.Response,
     next: express.NextFunction
   ) {
+    if (!req.body.email) {
+      res.status(400).send({
+        error: `Missing email`,
+      });
+      return;
+    }
     const user = await userService.getUserByEmail(req.body.email);
     /**
      * The 'user' type is an CreateUserDto, so only checking for < if (user){} > will fails
@@ -52,6 +69,12 @@ class UserMiddleware {
     res: express.Response,
     next: express.NextFunction
   ) {
+    if (!req.body.username) {
+      res.status(400).send({
+        error: `Missing username`,
+      });
+      return;
+    }
     const user = await userService.getUserByUsername(req.body.username);
     console.log(`userService.getUserByUsername() ${user} -- ${user?.username}`);
     if (user) {
@@ -69,6 +92,12 @@ class UserMiddleware {
     res: express.Response,
     next: express.NextFunction
   ) {
+    if (!req.body.email) {
+      res.status(400).send({
+        error: `Missing email`,
+      });
+      return;
+    }
     const user = await userService.getUserByEmail(req.body.email);
     if (user && user.id === Number(req.params.userId)) {
       next();
@@ -97,6 +126,12 @@ class UserMiddleware {
     res: express.Response,
     next: express.NextFunction
   ) {
+    if (!req.params.userId) {
+      res.status(400).send({
+        error: 'Missing userId',
+      });
+      return;
+    }
     const user = await userService.getById(req.params.userId);
     if (user) {
       next();
@@ -112,6 +147,12 @@ class UserMiddleware {
     res: express.Response,
     next: express.NextFunction
   ) {
+    if (!req.params.userId) {
+      res.status(400).send({
+        error: 'Missing userId',
+      });
+      return;
+    }
     const user = await userService.getById(req.body.userId);
     if (user) {
       next();
@@ -127,7 +168,14 @@ class UserMiddleware {
     res: express.Response,
     next: express.NextFunction
   ) {
-    req.body.id = req.params.userId;
+    const userId = req.params.userId;
+    if (!userId || userId === 'undefined') {
+      res.status(400).send({
+        error: 'Missing userId',
+      });
+      return;
+    }
+    req.body.id = userId;
     next();
   }
 }

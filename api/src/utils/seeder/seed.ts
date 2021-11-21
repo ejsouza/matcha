@@ -35,21 +35,21 @@ const randTags = async (userId: number) => {
 };
 
 const createUserAccount = async () => {
-  for (let i = 1; i <= 100; i++) {
+  for (let i = 1; i <= 500; i++) {
     const genders = ['male', 'female'];
     const sexuality = ['straight', 'gay', 'bisexual'];
     let coordinates = {
       x: 0,
       y: 0,
     };
-    if (i <= 150) {
+    if (i <= 100) {
       coordinates = setLocation(
         47.21400394584991,
         47.255665492438254,
         -1.5523838481265795,
         -1.5843600124770751
       ); // Nantes area coordinates
-    } else if (i <= 300) {
+    } else if (i <= 200) {
       coordinates = setLocation(
         45.74030656088014,
         45.77461914951937,
@@ -120,7 +120,7 @@ const createUserAccount = async () => {
     console.log(`creating user ${username} gender ${gender} number ${i}...`);
 
     https.get(
-      `https://fakeface.rest/face/json?gender=${gender}&minimum_age=18&maximum_age=30`,
+      `https://fakeface.rest/face/json?gender=${gender}&minimum_age=18&maximum_age=40`,
       (res) => {
         let body = '';
         res.on('data', (d) => {
@@ -141,7 +141,7 @@ const createUserAccount = async () => {
 
     randTags(i);
 
-    setTimeout(() => {}, 100);
+    setTimeout(() => {}, 500);
   }
 };
 

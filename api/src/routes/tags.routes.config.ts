@@ -2,7 +2,6 @@ import express from 'express';
 import { CommonRoutesConfig } from '../common/common.routes.config';
 import tagController from '../controllers/tags.controller';
 import usersMiddleware from '../middleware/users.middleware';
-import authMiddleware from '../middleware/auth.middleware';
 import tokenMiddleware from '../middleware/token.middleware';
 
 export class TagRoutes extends CommonRoutesConfig {
@@ -13,12 +12,7 @@ export class TagRoutes extends CommonRoutesConfig {
   configureRoutes() {
     this.app
       .route('/tags')
-      .all(
-        usersMiddleware.validateUserIdIsInBody,
-        tokenMiddleware.containValidJWT
-      )
-      // .get(tagController.list)
-      .post(tagController.create);
+      .post(tokenMiddleware.containValidJWT, tagController.create);
 
     this.app
       .route('/tags/:userId')

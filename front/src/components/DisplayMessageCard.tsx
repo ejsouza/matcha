@@ -1,3 +1,4 @@
+// eslint-disable-file no-use-before-define
 import { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { Accordion } from 'react-bootstrap';
@@ -154,6 +155,7 @@ const DisplayMessageCard = (props: { userMessages: MessageInterface[] }) => {
                               handleShowMessageModal(message.sender_id)
                             }
                           >
+                            // eslint-disable-next-line no-use-before-define
                             <a href="#">replay</a>
                           </ReplayMessageLink>
                         </StyledMessage>

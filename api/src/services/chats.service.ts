@@ -34,6 +34,12 @@ class ChatService {
 
     return res.rowCount;
   }
+
+	async setSeen(chatId: number) {
+		const res = await chatRepository.setSeen(chatId);
+
+		return res.rowCount;
+	}
 }
 
 export default new ChatService();

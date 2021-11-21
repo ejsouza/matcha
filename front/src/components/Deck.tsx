@@ -3,7 +3,7 @@ import { useSprings, animated, to as interpolate } from 'react-spring';
 import { useGesture } from 'react-use-gesture';
 import { Modal } from 'react-bootstrap';
 import styled from 'styled-components';
-import { useAppDispatch, useAppSelector } from 'store/hook';
+import { useAppSelector } from 'store/hook';
 import LikeButton from './LikeButton';
 import InfoButton from './InfoButton';
 import DislikeButton from './DislikeButton';
@@ -162,7 +162,6 @@ const Deck = () => {
   const [loading, setLoading] = useState(true);
   const [toggle, setToggle] = useState(false);
   const [maxSwippingReached, setMaxSwippingReached] = useState(false);
-  const dispatch = useAppDispatch();
   const currentUser: UserInterface = useAppSelector((state) => state.user);
   const [gone] = useState(() => new Set()); // The set flags all the cards that are flicked out
   const [props, set] = useSprings(users.length, (i) => ({
@@ -194,7 +193,7 @@ const Deck = () => {
     return () => {
       isMounted = false;
     };
-  }, [toggle]);
+  }, [toggle, maxSwippingReached]);
 
   useEffect(() => {
     /**
@@ -231,7 +230,7 @@ const Deck = () => {
     const currentUserCard = users[index];
     if (direction < 0) {
       if (currentUserCard.id) {
-        const res = await dislikeProfile(currentUserCard.id);
+        await dislikeProfile(currentUserCard.id);
       }
     } else if (direction > 0) {
       if (currentUserCard.id) {

@@ -24,7 +24,6 @@ class InMemorySessionStore extends SessionStore {
 
   saveSession(sessionID: string, session: SessionInterface) {
     this.sessions.set(sessionID, session);
-    console.log(`[SESSION] sessionID := ${sessionID} -- ${session.username}`);
   }
 
   findAllSession() {
@@ -33,7 +32,6 @@ class InMemorySessionStore extends SessionStore {
 
   deleteSession(sessionID: string) {
     const deleted = this.sessions.delete(sessionID);
-    console.log(`[SESSION-DELTE] ${deleted}`);
   }
 }
 

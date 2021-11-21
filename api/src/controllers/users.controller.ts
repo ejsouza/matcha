@@ -28,12 +28,32 @@ class UserController {
   }
 
   async getUserById(req: express.Request, res: express.Response) {
-    const user = await userService.getById(req.body.id);
+    const userId = req.body.id;
+    if (!userId || userId === 'undefined') {
+      return res.status(400).json({ success: false, message: 'Missing user.id' });
+    }
+    const user = await userService.getById(userId);
     res.status(200).send(user);
   }
 
+  async getUserAllDetails(req: express.Request, res: express.Response) {
+    const user = await userService.getUserAllDetails(req.params.userId);
+    res.status(200).json({ user });
+  }
+
+  async getUserLikedBy(req: express.Request, res: express.Response) {
+    const userId = req.params.userId;
+
+    if (!userId || userId === 'undefined') {
+      return res
+        .status(400)
+        .json({ success: false, message: 'Missing user.id' });
+    }
+    const users = await userService.getUserLikedBy(userId);
+    res.status(200).json({ users });
+  }
+
   async createUser(req: express.Request, res: express.Response) {
-    log('%0', 'createUser()');
     const result = await userService.create(req.body);
     res.status(201).send({ result });
   }
@@ -49,6 +69,40 @@ class UserController {
       req.body
     );
     res.status(201).json({ user });
+  }
+
+  async patchUserAgePreferences(req: express.Request, res: express.Response) {
+    const { min, max } = req.body;
+    const userId = Number(req.params.userId);
+    if (!userId || !min || !max) {
+      return res
+        .status(400)
+        .json({ success: false, message: 'Missing age userId/min/max' });
+    }
+    const count = await userService.patchUserAgePreferences(userId, min, max);
+
+    res.status(201).json({ success: true, count });
+  }
+
+  async patchUserDistancePreferences(
+    req: express.Request,
+    res: express.Response
+  ) {
+    const distance = req.body.distance;
+    const userId = Number(req.params.userId);
+
+    if (!userId || !distance) {
+      return res
+        .status(400)
+        .json({ success: false, message: 'Missing userId/distance' });
+    }
+
+    const count = await userService.patchUserDistancePreferences(
+      userId,
+      Number(distance)
+    );
+
+    res.status(201).json({ success: true, count });
   }
 }
 
