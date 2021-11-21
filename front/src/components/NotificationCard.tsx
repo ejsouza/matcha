@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Modal, Carousel } from 'react-bootstrap';
 import styled from 'styled-components';
 import Button from './Button';
-import { useAppDispatch, useAppSelector } from 'store/hook';
+import { useAppSelector } from 'store/hook';
 import { UserInterface } from 'interfaces';
 import { getUserAllDetails, UpdateUserInfoInterface } from 'api/user';
 import { visitUserProfile } from 'api/visit';
@@ -129,7 +129,6 @@ const NotificationCard = (props: { users: UpdateUserInfoInterface[] }) => {
             const res = await getUserAllDetails(userId);
             const data = await res.json();
             const usr: ProfileInterface = data.user;
-            console.log(`res >> ${usr.user.firstname}`);
 
             resolve(usr);
           });
@@ -141,11 +140,9 @@ const NotificationCard = (props: { users: UpdateUserInfoInterface[] }) => {
   const handleClose = async () => {
     setShow(false);
     setProfile(undefined);
-    console.log('visited profile');
     if (profile?.user.id) {
       const visited = await visitUserProfile(profile?.user.id, currentUser.id);
       if (visited.status === CREATED) {
-        console.log('Visit added to ', profile.user.username);
         socket.emit('visit', profile.user.username);
       }
     }
@@ -184,7 +181,7 @@ const NotificationCard = (props: { users: UpdateUserInfoInterface[] }) => {
         <GridContainer key={profile.user.id}>
           <GridItemPicture>
             <ImgContainer
-              src={profile.user.default_picture}
+              src={`${process.env.REACT_APP_API_URL}/uploads/${profile.user.default_picture}`}
               alt="user-picture"
             />
           </GridItemPicture>
@@ -215,24 +212,22 @@ const NotificationCard = (props: { users: UpdateUserInfoInterface[] }) => {
               <FlexBox flexWrap="wrap">
                 <CarouselWrapper>
                   <Carousel>
-                    <Carousel.Item>
-                      {profile?.pictures?.map((picture) => (
-                        <div key={picture.id}>
-                          <img
-                            className="d-block w-100"
-                            src={
-                              picture.file_path?.startsWith('https')
-                                ? picture.file_path
-                                : `${process.env.REACT_APP_API_URL}/uploads/${picture.file_path}`
-                            }
-                            alt="Profile picture"
-                            width="300"
-                            height="500"
-                          />
-                          <Carousel.Caption></Carousel.Caption>
-                        </div>
-                      ))}
-                    </Carousel.Item>
+                    {profile?.pictures?.map((picture) => (
+                      <Carousel.Item key={picture.id}>
+                        <img
+                          className="d-block w-100"
+                          src={
+                            picture.file_path?.startsWith('https')
+                              ? picture.file_path
+                              : `${process.env.REACT_APP_API_URL}/uploads/${picture.file_path}`
+                          }
+                          alt="Profile picture"
+                          width="300"
+                          height="500"
+                        />
+                        <Carousel.Caption></Carousel.Caption>
+                      </Carousel.Item>
+                    ))}
                   </Carousel>
                 </CarouselWrapper>
                 <ProfileInfo>

@@ -57,14 +57,12 @@ const SignUp = () => {
   const dispatch = useAppDispatch();
   const showSignupCard = useAppSelector((state) => state.showSignupCard);
   const showLoginCard = useAppSelector((state) => state.showLoginCard);
-  console.log(showSignupCard);
 
   const closeCard = () => {
     dispatch(showSignupCardUpdated(false));
   };
 
   const handleCreateAccount = async (e: React.FormEvent) => {
-    console.log(`enters handleCreateAccount()`);
     e.preventDefault();
     if (
       !(userName.length > 3) ||
@@ -81,7 +79,6 @@ const SignUp = () => {
       email,
       password,
     });
-    console.log(`API RESPONSE ${res.status}`);
     if (res.status === CREATED) {
       // tell user to confirm his account before trying to login
       closeCard();

@@ -1,5 +1,5 @@
 import styled from 'styled-components';
-import { LinkWrapper, LinkTo } from './Desktop/UpdateLink';
+import { LinkWrapper, LinkTo } from './desktop/UpdateLink';
 
 const CenterText = styled.div`
   text-align: center;

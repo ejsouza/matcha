@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Form, Container, Alert } from 'react-bootstrap';
+import { Link } from 'react-router-dom';
+import { Form, Container, Alert, Modal } from 'react-bootstrap';
 import styled from 'styled-components';
 import Card from 'components/Card';
 import 'index.css';
@@ -11,14 +12,10 @@ import {
 } from 'store/actions';
 import Button from 'components/Button';
 import { login } from 'api/auth';
-import {
-  UNAUTHORIZED,
-  AUTHORIZED,
-  LOGGED_USER,
-  CREATED,
-  USER_TOKEN,
-} from 'utils/const';
+import { LOGGED_USER, CREATED, USER_TOKEN } from 'utils/const';
 import { UserInterface, ApiResponse } from 'interfaces';
+import socket, { SessionInterface } from 'socket/socket.io';
+import { getSessionFromLocalStorage } from 'utils/session';
 
 /************************* STYLED COMPONENTS *************************/
 
@@ -35,12 +32,15 @@ export const CrossCard = styled.div`
   margin-left: auto;
 `;
 
-const ForgotPasswordLink = styled.a`
-  text-decoration: none;
-  cursor: pointer;
-  color: #fd546c;
-  :hover {
-    color: #fd297b;
+const ForgotPasswordLink = styled.div`
+  padding2-top: 20px;
+  a {
+    text-decoration: none;
+    cursor: pointer;
+    color: #fd546c;
+    :hover {
+      color: #fd297b;
+    }
   }
 `;
 
@@ -52,9 +52,13 @@ const LinkWrapper = styled.div`
 const LoginDesktop = () => {
   const [userName, setUserName] = useState('');
   const [password, setPassword] = useState('');
+  const [show, setShow] = useState(false);
   const [showError, setShowError] = useState(false);
   const dispatch = useAppDispatch();
   const showLoginCard = useAppSelector((state) => state.showLoginCard);
+
+  const handleClose = () => setShow(false);
+
   const closeCard = () => {
     dispatch(showLoginCardUpdated(false));
   };
@@ -68,10 +72,12 @@ const LoginDesktop = () => {
       const res = await login(userName, password);
       const data: ApiResponse = await res.json();
       const user: UserInterface = data.user;
+
+      if (!user.activated) {
+        setShow(true);
+        return;
+      }
       const token = data.token;
-      console.log('login(user) ', user);
-      console.log('login(token) ', token);
-      console.log(`status(${res.status})`);
       if (res.status === CREATED) {
         localStorage.setItem(LOGGED_USER, JSON.stringify(user));
         localStorage.setItem(USER_TOKEN, token);
@@ -79,16 +85,25 @@ const LoginDesktop = () => {
         dispatch(showLoginCardUpdated(false));
         dispatch(isLoggedUpdated(true));
         dispatch(userInfoUpdated({ ...user }));
+
+        const session = getSessionFromLocalStorage();
+        if (!session) {
+          const loginSession: SessionInterface = {
+            userID: '',
+            sessionID: '',
+            username: userName,
+            connected: true,
+          };
+          socket.emit('login', loginSession);
+        } else {
+          socket.emit('login', session);
+        }
       } else {
         setShowError(true);
         setTimeout(() => {
           setShowError(false);
         }, 2000);
       }
-
-      console.log(
-        `submited ${res.status}[${res.statusText}] - ${user.firstname} - ${user.sexual_orientation}`
-      );
     } catch (error) {
       console.log(`error occurred := ${error}`);
     }
@@ -145,7 +160,10 @@ const LoginDesktop = () => {
 
             <Container>
               <Form onSubmit={(e) => handleLogin(e)}>
-                <Form.Group className="mb-3" controlId="formBasicEmail">
+                <Form.Group
+                  className="mb-3 gray-one"
+                  controlId="formBasicEmail"
+                >
                   <Form.Label>User Name</Form.Label>
                   <Form.Control
                     onChange={(e) => setUserName(e.target.value)}
@@ -159,7 +177,10 @@ const LoginDesktop = () => {
                   </Form.Text>
                 </Form.Group>
 
-                <Form.Group className="mb-3" controlId="formBasicPassword">
+                <Form.Group
+                  className="mb-3 gray-one"
+                  controlId="formBasicPassword"
+                >
                   <Form.Label>Password</Form.Label>
                   <Form.Control
                     onChange={(e) => setPassword(e.target.value)}
@@ -174,11 +195,32 @@ const LoginDesktop = () => {
             </Container>
             <br />
             <LinkWrapper>
-              <ForgotPasswordLink>Forgot password</ForgotPasswordLink>
+              <ForgotPasswordLink>
+                <Link to={'/forgot-password'}>Forgot password</Link>
+              </ForgotPasswordLink>
             </LinkWrapper>
           </Card>
         </>
       )}
+      <Modal
+        show={show}
+        onHide={handleClose}
+        backdrop="static"
+        keyboard={false}
+      >
+        <Modal.Header closeButton>
+          <Modal.Title className="error-message">
+            Account not activated!
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body className="error-message">
+          <p>You first need to activate your account.</p>
+          <p>
+            Please check your email box, we have sent you a confirmation link.
+          </p>
+        </Modal.Body>
+        <Modal.Footer></Modal.Footer>
+      </Modal>
     </>
   );
 };

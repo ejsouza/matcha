@@ -1,6 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
 import { Col, Row, Modal, Form } from 'react-bootstrap';
-import debounce from 'lodash.debounce';
 import UpdateLink from './desktop/UpdateLink';
 import { useAppDispatch, useAppSelector } from 'store/hook';
 import { UserInterface } from 'interfaces';
@@ -9,8 +8,6 @@ import CenteredTextLink from './CenteredTextLink';
 import ShowMap from './ShowMap';
 import Passions from './Passions';
 import Pictures from './Pictures';
-import RangeSlider from './rangeSlider';
-import DoubleRangeSlider from './rangeSlider/doubleRangeSlider';
 import AgePreferenceSlider from './AgePreferenceSlider';
 import DistancePreference from './DistancePreference';
 import Loading from './Loading';
@@ -29,7 +26,7 @@ import { isProfileComplete } from 'utils/accountRequiredInfo';
 import { user as userInitialState } from 'store';
 import { isLoggedUpdated, userInfoUpdated } from 'store/actions';
 import { getUser, updateUserInfo, UpdateUserInfoInterface } from 'api/user';
-import socket, { SessionInterface } from 'socket/socket.io';
+import socket from 'socket/socket.io';
 import { removeSessionFromLocalStorage } from 'utils/session';
 import styled from 'styled-components';
 
@@ -43,12 +40,11 @@ const DiscoveryArea = styled.div`
 
 const SideBarScrollable = styled.div``;
 
-interface RangeInterface {
-  min: number;
-  max: number;
+interface SettingProps {
+  margintop: string;
 }
 
-const Settings = () => {
+const Settings = (props: SettingProps) => {
   const dispatch = useAppDispatch();
   const user: UserInterface = useAppSelector((state) => state.user);
   const [show, setShow] = useState(false);
@@ -72,14 +68,10 @@ const Settings = () => {
   const activateShowChangePassword = () => setShowChangePassword(true);
 
   useEffect(() => {
-    // if (user.id && !user.activated && !show) {
-    //   setShow(true);
-    // }
     (async () => {
       const res = await getUser();
       if (res.status === SUCCESS) {
         const currentUserState: UserInterface = await res.json();
-        console.log(`currentUserState := ${currentUserState.firstname} `);
         if (!isProfileComplete(currentUserState)) {
           setShow(true);
         }
@@ -96,7 +88,6 @@ const Settings = () => {
       setBirthDate(user.birthdate);
       setDescription(user.biography);
       setSexualOrientation(user.sexual_orientation);
-      console.log(`default_picture ? ${user.default_picture}`);
     }
   }, [user]);
 
@@ -179,22 +170,6 @@ const Settings = () => {
     }
   };
 
-  const distancePreferenceHandler = (range: RangeInterface) => {
-    console.log(`distancePreferenceHandler(${range.min} to ${range.max})`);
-  };
-  const debounceDistancePreferenceHandler = useMemo(
-    () => debounce(distancePreferenceHandler, 300),
-    []
-  );
-
-  const agePreferenceHandler = (range: RangeInterface) => {
-    // console.log(`agePreferenceHandler(${range.min} to ${range.max})`);
-  };
-  const debounceAgePreferenceHandler = useMemo(
-    () => debounce(agePreferenceHandler, 300),
-    []
-  );
-
   return !user ? (
     <Loading />
   ) : (
@@ -207,7 +182,10 @@ const Settings = () => {
       </Modal>
 
       <SideBarScrollable>
-        <AccountSettingHeaderDesktop cb={handleShow} />
+        <AccountSettingHeaderDesktop
+          cb={handleShow}
+          margintop={props.margintop}
+        />
         <Hr />
         <UpdateLink
           title="Email"

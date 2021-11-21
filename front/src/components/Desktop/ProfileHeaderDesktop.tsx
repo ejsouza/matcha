@@ -2,15 +2,34 @@ import { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { Row } from 'react-bootstrap';
 import defaultProfilePicture from 'assets/icons/profile-picture-default.svg';
-import { getUserChats, setChatToSeen } from 'api/chat';
+import { getVisits } from 'api/visit';
 import { getMessages, updateSeenMessage } from 'api/message';
+import { getLikesLikedBy } from 'api/like';
+import { getUnseenMatches } from 'api/match';
 import briefcase from 'assets/icons/brief_case.svg';
 import { MessageInterface } from 'components/DisplayMessageCard';
 import { getUserIdFromLocalStorage } from 'utils/user';
+import socket from 'socket/socket.io';
+import { SUCCESS } from 'utils/const';
 
 interface ProfileHeaderProps {
   cbSettings: () => void;
   cbNotification: () => void;
+}
+
+interface VisitInterface {
+  id: number;
+  visitee_id: number;
+  visitor_id: number;
+  seen: boolean;
+  visited_at: Date;
+}
+
+interface LikesInterface {
+  id: number;
+  user_id: number;
+  liked_id: number;
+  seen: boolean;
 }
 
 interface NotificationInterface {
@@ -74,23 +93,153 @@ const Notification = styled.div<NotificationInterface>`
 
 const ProfileHeaderDesktop = (props: ProfileHeaderProps) => {
   const [messages, setMessages] = useState(0);
-  const [chats, setChats] = useState(0);
+  const [visits, setVisits] = useState(0);
+  const [likes, setLikes] = useState(0);
+  const [matches, setMatches] = useState(0);
+  const currentUserId = getUserIdFromLocalStorage();
 
   useEffect(() => {
-    (async () => {
-      const currentUserId = getUserIdFromLocalStorage();
-      const msgRes = await getMessages();
+    let isMounted = true;
+    getUserMessages().then((count) => {
+      if (isMounted) {
+        setMessages(count);
+      }
+    });
+
+    socket.on('direct message', () => {
+      getUserMessages().then((count) => {
+        if (isMounted) {
+          setMessages(count);
+        }
+      });
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+    getUserVisits().then((count) => {
+      if (isMounted) {
+        setVisits(count);
+      }
+    });
+
+    socket.on('visit', () => {
+      getUserVisits().then((count) => {
+        if (isMounted) {
+          setVisits(count);
+        }
+      });
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+    getUserLikes().then((count) => {
+      if (isMounted) {
+        setLikes(count);
+      }
+    });
+
+    socket.on('like', () => {
+      getUserLikes().then((count) => {
+        if (isMounted) {
+          setLikes(count);
+        }
+      });
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+    getUserUnseenMatches().then((count) => {
+      if (isMounted) {
+        setMatches(count);
+      }
+    });
+    socket.on('match', () => {
+      getUserUnseenMatches().then((count) => {
+        if (isMounted) {
+          setMatches(count);
+        }
+      });
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  async function getUserMessages() {
+    let msgCount = 0;
+
+    const msgRes = await getMessages();
+
+    if (msgRes.status === SUCCESS) {
       const msgJson = await msgRes.json();
       const msgs: MessageInterface[] = msgJson.messages;
-      let msgCount = 0;
       msgs.forEach((msg) => {
         if (msg.receiver_id === currentUserId && !msg.seen) {
           msgCount++;
         }
       });
-      setMessages(msgCount);
-    })();
-  }, []);
+    }
+    return msgCount;
+  }
+
+  async function getUserVisits() {
+    let visitCount = 0;
+    const visitsRes = await getVisits();
+
+    if (visitsRes.status === SUCCESS) {
+      const visitsJson = await visitsRes.json();
+      const vsts: VisitInterface[] = visitsJson.visits;
+      vsts.forEach((visit) => {
+        if (visit.visitee_id === currentUserId && !visit.seen) {
+          visitCount++;
+        }
+      });
+    }
+    return visitCount;
+  }
+
+  async function getUserLikes() {
+    let likesCount = 0;
+    const res = await getLikesLikedBy(currentUserId || 0);
+    if (res.status === SUCCESS) {
+      const json = await res.json();
+      const likes: LikesInterface[] = json.likes;
+
+      likes.forEach((like) => {
+        if (!like.seen) {
+          likesCount++;
+        }
+      });
+    }
+    return likesCount;
+  }
+
+  async function getUserUnseenMatches() {
+    let unseenMatchesCount = 0;
+    const res = await getUnseenMatches();
+    if (res.status === SUCCESS) {
+      const json = await res.json();
+      const matches: LikesInterface[] = json.matches;
+
+      unseenMatchesCount = matches.length;
+    }
+    return unseenMatchesCount;
+  }
 
   return (
     <>
@@ -107,8 +256,12 @@ const ProfileHeaderDesktop = (props: ProfileHeaderProps) => {
           </BoxHeaderItemStart>
           <BoxProfileHeaderItem>My Profile</BoxProfileHeaderItem>
           <BoxHeaderItemEnd>
-            <Notification display="auto">
-              <span>{messages}</span>
+            <Notification
+              display={
+                messages + visits + likes + matches > 0 ? 'auto' : 'none'
+              }
+            >
+              <span>{messages + visits + likes + matches}</span>
             </Notification>
 
             <img

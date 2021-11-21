@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Carousel } from 'react-bootstrap';
 import styled from 'styled-components';
 import Bell from './Bell';
@@ -25,6 +25,10 @@ import { CREATED, SUCCESS } from 'utils/const';
 import DisplayMessageCard, { MessageInterface } from './DisplayMessageCard';
 import socket from 'socket/socket.io';
 
+interface TitleProps {
+  topTitle: string;
+}
+
 const Container = styled.div`
   padding-left: 16px;
   padding-right: 24px;
@@ -35,8 +39,9 @@ const LoadingContainer = styled.div`
   margin-left: 25%;
 `;
 
-const TitlePrev = styled.div`
-  top: 70px;
+const TitlePrev = styled.div<TitleProps>`
+  // top: 70px;
+  top: ${(p) => p.topTitle};
   display: flex;
   align-items: center;
   position: absolute;
@@ -46,8 +51,9 @@ const TitlePrev = styled.div`
   width: 20%;
 `;
 
-const TitleNext = styled.div`
-  top: 70px;
+const TitleNext = styled.div<TitleProps>`
+  // top: 70px;
+  top: ${(p) => p.topTitle};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -58,15 +64,12 @@ const TitleNext = styled.div`
   width: 5.6%;
 `;
 
-const WrapTitle = styled.div`
-  // position: relative;
-  // margin-top: -100px;
-  // text-align: center;
-`;
+const WrapTitle = styled.div``;
 
-const Wrapper = styled.div`
+const Wrapper = styled.div<{ wrapperpaddingtop: string }>`
   position: relative;
-  padding-top: 100px;
+  padding-top: ${(p) => p.wrapperpaddingtop};
+  // padding-top: 100px;
 
   h6 {
     text-align: center;
@@ -93,7 +96,17 @@ interface LikeInterface {
   seen: boolean;
 }
 
-const Notifications = (props: { notif: boolean }) => {
+interface NotificationsProps {
+  notif: boolean;
+  topTitle: string;
+  wrapperpaddingtop: string;
+}
+
+const Notifications = ({
+  notif,
+  topTitle,
+  wrapperpaddingtop,
+}: NotificationsProps) => {
   const user: UserInterface = useAppSelector((state) => state.user);
   const [index, setIndex] = useState(0);
   const [visits, setVisits] = useState<VisitInterface[]>();
@@ -116,7 +129,6 @@ const Notifications = (props: { notif: boolean }) => {
   const getUserVisits = useCallback(async () => {
     const res = await getVisits();
     if (res.status !== SUCCESS) {
-      console.log(`session experied, need to logout user`);
       localStorage.clear();
       window.history.pushState({}, '/');
       window.location.reload();
@@ -132,14 +144,14 @@ const Notifications = (props: { notif: boolean }) => {
     });
     setUnseenVisits(unseenV);
     setVisits(visitors);
-  }, [props.notif]);
+  }, [notif]);
 
   const getMatches = useCallback(async () => {
     const res = await getUserMatches();
     const m = await res.json();
     const matchedUsers: UpdateUserInfoInterface[] = m.matches;
     setMatches(matchedUsers);
-  }, [props.notif]);
+  }, [notif]);
 
   const getUserUnseenMatches = useCallback(async () => {
     const res = await getUnseenMatches();
@@ -148,7 +160,7 @@ const Notifications = (props: { notif: boolean }) => {
       const matches: MatchesInterface[] = json.matches;
       setUnseenMatches(matches.length);
     }
-  }, [props.notif]);
+  }, [notif]);
 
   const getUserMessages = useCallback(async () => {
     const res = await getMessages();
@@ -162,14 +174,14 @@ const Notifications = (props: { notif: boolean }) => {
     });
     setUnseenMessages(unseenM);
     setMessages(msgs);
-  }, [props.notif]);
+  }, [notif]);
 
   const getLikedByUser = useCallback(async () => {
     const res = await getUserLikedBy(user.id.toString());
     const json = await res.json();
     const likedBy: UpdateUserInfoInterface[] = json.users;
     setLikedBy(likedBy);
-  }, [props.notif]);
+  }, [notif]);
 
   const getLikesLikedCurrentUser = useCallback(async () => {
     const res = await getLikesLikedBy(user.id);
@@ -183,7 +195,7 @@ const Notifications = (props: { notif: boolean }) => {
       }
     });
     setUnseenLikes(count);
-  }, [props.notif]);
+  }, [notif]);
 
   useEffect(() => {
     getUserVisits();
@@ -246,7 +258,6 @@ const Notifications = (props: { notif: boolean }) => {
   }, []);
 
   const handleClick = async (index: number) => {
-    console.log(`handleClick(${index})`);
     if (index === 0 && unseenMatches > 0) {
       const res = await deleteUnseenMatches();
       if (res.status === SUCCESS) {
@@ -302,7 +313,7 @@ const Notifications = (props: { notif: boolean }) => {
           indicators={false}
           prevIcon={
             <WrapTitle>
-              <TitlePrev onClick={() => handleClick(prev)}>
+              <TitlePrev topTitle={topTitle} onClick={() => handleClick(prev)}>
                 {notificatons[prev]}&nbsp;
                 {prev === 0 && unseenMatches > 0 && (
                   <Bell width="16" height="20" count={unseenMatches} />
@@ -321,7 +332,7 @@ const Notifications = (props: { notif: boolean }) => {
           }
           nextIcon={
             <WrapTitle>
-              <TitleNext onClick={() => handleClick(next)}>
+              <TitleNext topTitle={topTitle} onClick={() => handleClick(next)}>
                 {notificatons[next]}&nbsp;
                 {next === 0 && unseenMatches > 0 && (
                   <Bell width="16" height="20" count={unseenMatches} />
@@ -340,7 +351,7 @@ const Notifications = (props: { notif: boolean }) => {
           }
         >
           <Carousel.Item>
-            <Wrapper>
+            <Wrapper wrapperpaddingtop={wrapperpaddingtop}>
               <ActiveTitle>
                 <hr />
                 <h6>Matches</h6>
@@ -353,7 +364,7 @@ const Notifications = (props: { notif: boolean }) => {
             </Wrapper>
           </Carousel.Item>
           <Carousel.Item>
-            <Wrapper>
+            <Wrapper wrapperpaddingtop={wrapperpaddingtop}>
               <ActiveTitle>
                 <hr />
                 <h6>Messages</h6>
@@ -366,7 +377,7 @@ const Notifications = (props: { notif: boolean }) => {
             </Wrapper>
           </Carousel.Item>
           <Carousel.Item>
-            <Wrapper>
+            <Wrapper wrapperpaddingtop={wrapperpaddingtop}>
               <ActiveTitle>
                 <hr />
 
@@ -382,7 +393,7 @@ const Notifications = (props: { notif: boolean }) => {
             </Wrapper>
           </Carousel.Item>
           <Carousel.Item>
-            <Wrapper>
+            <Wrapper wrapperpaddingtop={wrapperpaddingtop}>
               <ActiveTitle>
                 <hr />
 

@@ -5,6 +5,7 @@ import Button from './Button';
 import { sendMessage } from 'api/message';
 import { CREATED } from 'utils/const';
 import { UpdateUserInfoInterface } from 'api/user';
+import socket from 'socket/socket.io';
 
 const MessageUserName = styled.div`
   span {
@@ -73,12 +74,10 @@ const SendMessage = (props: SendMessageInterface) => {
       setAlertMessage('');
       setVariant('');
       setShow(false);
-      // props.callback();
     }, 1000);
   };
 
   const handleSendMessage = async () => {
-    console.log(`Sending [${message}] to ${props.receiver?.id}`);
     if (message.length < 2) {
       handleMinLenMessage();
     } else {
@@ -87,14 +86,12 @@ const SendMessage = (props: SendMessageInterface) => {
         const res = await sendMessage(id.toString(), message);
         if (res.status === CREATED) {
           handleSuccessMessage();
+          socket.emit('direct message', props.receiver?.username);
         } else {
           handleErrorMessage();
         }
-        // setMessage('');
-        // props.callback();
       } catch (err) {
         handleErrorMessage();
-        console.log(`catch(err) ${err}`);
       }
     }
   };

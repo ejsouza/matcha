@@ -4,7 +4,7 @@ import Container from 'react-bootstrap/Container';
 import Login from 'components/Login';
 import 'index.css';
 
-const NavBar = () => {
+const NavBarDesktop = () => {
   return (
     <>
       <Navbar collapseOnSelect expand="lg" bg="dark" variant="dark">
@@ -13,7 +13,7 @@ const NavBar = () => {
           <Navbar.Toggle aria-controls="responsive-navbar-nav" />
           <Navbar.Collapse id="responsive-navbar-nav">
             <Nav className="me-auto">
-              <Nav.Link href="#features">PlaceHolder</Nav.Link>
+              <Nav.Link href="#" />
             </Nav>
             <Nav>
               <Nav>
@@ -27,4 +27,4 @@ const NavBar = () => {
   );
 };
 
-export default NavBar;
+export default NavBarDesktop;

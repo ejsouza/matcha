@@ -1,13 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useSprings, animated, to as interpolate } from 'react-spring';
 import { useGesture } from 'react-use-gesture';
-import { Modal, Container, Row, Col } from 'react-bootstrap';
+import { Modal } from 'react-bootstrap';
 import styled from 'styled-components';
 import { useAppDispatch, useAppSelector } from 'store/hook';
 import LikeButton from './LikeButton';
 import InfoButton from './InfoButton';
 import DislikeButton from './DislikeButton';
 import { getUsers, UpdateUserInfoInterface } from 'api/user';
+import Loading from './Loading';
 import { CREATED, SUCCESS } from 'utils/const';
 import { aHundredLengthBio } from 'utils/user';
 import { likeProfile, getLikesByUserId, dislikeProfile } from 'api/like';
@@ -16,12 +17,8 @@ import { UserInterface } from 'interfaces';
 import { FlexBox, Gap } from 'globalStyled';
 import Button from './Button';
 import MessageCard from './MessageCard';
+import Card from './Card';
 import socket from 'socket/socket.io';
-
-interface TagInterface {
-  id: number;
-  name: string;
-}
 
 interface LikesInterface {
   user_id: number;
@@ -35,7 +32,6 @@ const ButtonsContainer = styled.div`
   width: 100%;
   max-width: 360px;
   margin: auto;
-  // margin-top: 500px;
   padding: 0 16px;
   z-index: 1;
 `;
@@ -117,6 +113,32 @@ const TagWrapper = styled.div`
   color: #fff;
 `;
 
+const LoadingWrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  min-height: 100vh;
+`;
+
+const CardWrapper = styled.div`
+  position: relative;
+  top: 40%;
+  left: 50%;
+  margin-top: -50px;
+  margin-left: -50px;
+  width: 100px;
+  height: 100px;
+`;
+
+const NoUsersContainer = styled.div`
+  margin-top: 50%;
+  padding: 1em;
+  text-align: center;
+  color: var(--primary-gray-color);
+`;
+
 // These two are just helpers, they curate spring data, values that are later being interpolated into css
 const to = (i: number) => ({
   x: 0,
@@ -137,6 +159,9 @@ const Deck = () => {
     useState<UpdateUserInfoInterface>();
   const [showMatch, setShowMatch] = useState(false);
   const [showMessageCard, setShowMessageCard] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [toggle, setToggle] = useState(false);
+  const [maxSwippingReached, setMaxSwippingReached] = useState(false);
   const dispatch = useAppDispatch();
   const currentUser: UserInterface = useAppSelector((state) => state.user);
   const [gone] = useState(() => new Set()); // The set flags all the cards that are flicked out
@@ -146,20 +171,46 @@ const Deck = () => {
   }));
 
   useEffect(() => {
-    getUsers().then((res) => {
-      if (res?.status === SUCCESS) {
-        res.json().then((match) => {
-          console.log(match.users);
-          setUsers(match.users);
-        });
-      } else {
-        console.log(`error getting users ${res?.status}`);
+    let isMounted = true;
+    (async () => {
+      const res = await getUsers();
+      if (res.status === SUCCESS) {
+        const json = await res.json();
+        const matches: UpdateUserInfoInterface[] = json.users;
+        if (isMounted) {
+          if (maxSwippingReached && matches.length) {
+            setMaxSwippingReached(false);
+          }
+          matches.sort((a, b) => a.rate! - b.rate!);
+          setUsers(matches);
+          setLoading(false);
+        }
       }
-    });
+    })();
     /**
      * Probably here we need to watch for user updates
      * in case user changes his preference (distance, sexuality...)
      */
+    return () => {
+      isMounted = false;
+    };
+  }, [toggle]);
+
+  useEffect(() => {
+    /**
+     * This isMounted could cause problem.
+     * Was working before adding it, but we're
+     * getting the 'no-op' warning.
+     */
+    let isMounted = true;
+    socket.on('update user deck', () => {
+      if (isMounted) {
+        setToggle((toggle) => !toggle);
+      }
+    });
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const handleCloseShowMatch = () => {
@@ -181,16 +232,8 @@ const Deck = () => {
     if (direction < 0) {
       if (currentUserCard.id) {
         const res = await dislikeProfile(currentUserCard.id);
-        if (res.status !== CREATED) {
-          console.log(`Dislike failed...[${res.status}]`);
-        } else {
-          console.log(`You disliked := ${currentUserCard.username}`);
-        }
       }
     } else if (direction > 0) {
-      console.log(
-        `You liked ${currentUserCard.username} with id ${currentUserCard.id}`
-      );
       if (currentUserCard.id) {
         const res = await likeProfile(currentUserCard.id);
         if (res.status === CREATED) {
@@ -203,7 +246,6 @@ const Deck = () => {
           if (isMatch) {
             setMatchedProfile(currentUserCard);
             handleShowMatch();
-            console.log(`IS A MATCH...${isMatch}`);
             /**
              * Here we sent the matched username to be notified.
              * The current user dosn't need to be notified as s/he
@@ -219,7 +261,6 @@ const Deck = () => {
 
             const resMatch = await createUnseenMatch(currentUserCard.id);
             if (resMatch.status === CREATED) {
-              console.log('created a new match!');
             } else {
               /**
                * WARNING
@@ -227,9 +268,6 @@ const Deck = () => {
                * not yet created for unseen matches.
                * This match here is only for showing on the header.
                */
-              console.log(
-                `somehting went wrong creating new match! [${resMatch.status}]`
-              );
             }
           } else {
             /**
@@ -237,9 +275,6 @@ const Deck = () => {
              */
             socket.emit('like', currentUserCard.username);
           }
-        } else {
-          const error = await res.json();
-          console.log(`ERROR := ${error.message}`);
         }
       }
     }
@@ -292,6 +327,9 @@ const Deck = () => {
         config: { friction: 50, tension: 200 },
       };
     });
+    if (index === 0) {
+      setMaxSwippingReached(true);
+    }
   };
 
   const like = (index: number) => {
@@ -306,12 +344,37 @@ const Deck = () => {
         config: { friction: 50, tension: 200 },
       };
     });
+    if (index === 0) {
+      setMaxSwippingReached(true);
+    }
   };
-  const callMe = (index: number) => {
-    console.log(`you called me from Deck(${index})`);
-  };
+
   // Now we're just mapping the animated values to our view, that's it. Btw, this component only renders once. :-)
-  return (
+  return loading ? (
+    <LoadingWrapper>
+      <Loading />
+    </LoadingWrapper>
+  ) : users.length === 0 ? (
+    <CardWrapper>
+      <Card>
+        <NoUsersContainer>
+          <h4>Argh no mathing found!</h4>
+          💡 💡 💡
+          <p>Try changing your preferences...</p>
+        </NoUsersContainer>
+      </Card>
+    </CardWrapper>
+  ) : maxSwippingReached ? (
+    <CardWrapper>
+      <Card>
+        <NoUsersContainer>
+          <h4>Argh no lucky today!</h4>
+          😈 😈 😈
+          <p>You can try it again tomorrow...</p>
+        </NoUsersContainer>
+      </Card>
+    </CardWrapper>
+  ) : (
     <>
       <div id="root-deck">
         {props.map(({ x, y, rot, scale }, i) => (
@@ -329,9 +392,7 @@ const Deck = () => {
               }}
             >
               <InfoContainer>
-                <h3>
-                  {users[i]?.firstname}&nbsp;{users[i]?.age}
-                </h3>
+                <h3>{users[i]?.username}</h3>
                 <p>{aHundredLengthBio(users[i]?.biography)}</p>
                 <TagContainer>
                   {users[i].tags?.slice(0, 3).map((tag) => (

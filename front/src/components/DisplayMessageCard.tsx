@@ -1,11 +1,14 @@
-import { useState } from 'react';
-import { getMessages, sendMessage } from 'api/message';
+import { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { Accordion, Modal, Form } from 'react-bootstrap';
-import { UpdateUserInfoInterface } from '../api/user';
+import { Accordion } from 'react-bootstrap';
+import { getUserById, UpdateUserInfoInterface } from '../api/user';
 import { updateSeenMessage } from 'api/message';
 import { CREATED } from 'utils/const';
-import Button from './Button';
+import SendMessage from './SendMessage';
+import formatDistanceToNow from 'date-fns/formatDistanceToNow';
+import { useAppSelector } from 'store/hook';
+import { UserInterface } from 'interfaces';
+import socket from 'socket/socket.io';
 
 export interface MessageInterface {
   id: number;
@@ -21,7 +24,7 @@ export interface UserReceivedMessage {
   user: UpdateUserInfoInterface;
 }
 
-const MessagesWrappe = styled.div`
+const MessagesWrapper = styled.div`
   z-index: 5;
 `;
 
@@ -40,6 +43,15 @@ const UserName = styled.div`
 const StyledMessage = styled.div`
   color: var(--primary-gray-color);
   font-size: 0.9em;
+  padding: 8px;
+  background-color: #fff;
+  border: 0.1em dotted var(--primary-gray-color);
+  p {
+    text-align: end;
+    margin-top: 0.5em;
+    margin-bottom: 0.1em;
+    font-size: 0.6em;
+  }
 `;
 
 const ReplayMessageLink = styled.div`
@@ -50,155 +62,115 @@ const ReplayMessageLink = styled.div`
   }
 `;
 
-const MessageUserName = styled.div`
-  span {
-    color: var(--primary-gray-color);
-    font-size: 0.8em;
-  }
-`;
-
-const TextArea = styled.div`
-  textarea {
-    font-size: 0.9em;
-    color: var(--primary-gray-color);
-    letter-spacing: 0.1em;
-  }
-`;
-
-const DisplayMessageCard = (props: { userMessages: UserReceivedMessage[] }) => {
+const DisplayMessageCard = (props: { userMessages: MessageInterface[] }) => {
   const { userMessages } = props;
-  const [modalShow, setModalShow] = useState(false);
+  const [users, setUsers] = useState<UpdateUserInfoInterface[]>([]);
+  const user: UserInterface = useAppSelector((state) => state.user);
+  const [showModal, setShowModal] = useState(false);
   const [sendTo, setSentTo] = useState<UpdateUserInfoInterface>();
-  const [messageText, setMessageText] = useState('');
 
-  const handleSawMessage = async (messageId: number) => {
-    console.log(`Updading seen state of messageId := ${messageId}`);
-    const msg = userMessages.find(
-      (userMessage) => userMessage.message.id === messageId
+  userMessages.sort((a, b) => {
+    return +new Date(b.sent_at) - +new Date(a.sent_at);
+  });
+  const uniqueSenders: MessageInterface[] = [];
+  props.userMessages.forEach((userMessage) => {
+    const includes = uniqueSenders.find(
+      (sender) => sender.sender_id === userMessage.sender_id
     );
-    /**
-     * Check if message was already set to seen before updating
-     */
-    if (msg && !msg.message.seen) {
-      console.log(`FOUND ${msg.message.seen}`);
-      try {
-        const res = await updateSeenMessage(messageId);
-        if (res.status === CREATED) {
-          console.log(`Update message seen state to true`);
-        } else {
-          console.log(`Something went wrong`);
-        }
-      } catch (err) {
-        console.log(`catch() ${err}`);
-      }
-    } else {
-      // this else is to be removed only here during development
-      console.log(`Is MESSAGE already seen ? ${msg?.message.seen}`);
+    if (!includes) {
+      uniqueSenders.push(userMessage);
     }
-  };
+  });
+
+  useEffect(() => {
+    (async () => {
+      const users = (await Promise.all(
+        uniqueSenders.map((sender) => {
+          return new Promise(async (resolve) => {
+            const res = await getUserById(sender.sender_id);
+            const data: UpdateUserInfoInterface = await res.json();
+            resolve(data);
+          });
+        })
+      )) as UpdateUserInfoInterface[];
+      setUsers(users);
+    })();
+  }, []);
 
   const handleShowMessageModal = (toId: number) => {
-    const usr = userMessages.find(
-      (userMessage) => userMessage.user.id === toId
-    );
-    setSentTo(usr?.user);
-    setModalShow(true);
+    const usr = users.find((user) => user.id === toId);
+    setSentTo(usr);
+    setShowModal(true);
   };
 
-  const handleSendMessage = async () => {
-    console.log(`Sending [${messageText}] to ${sendTo?.id}`);
-    try {
-      const receiver_id = sendTo?.id?.toString() || '';
-      const res = await sendMessage(receiver_id, messageText);
-      if (res.status === CREATED) {
-        console.log('Message sent');
-      } else {
-        console.log('Could not sent message');
-      }
-      setMessageText('');
-      setModalShow(false);
-    } catch (err) {
-      console.log(`catch(err) ${err}`);
+  const toggleSendMessage = () => {
+    setShowModal(!showModal);
+  };
+
+  const handleSawMessage = (senderId: number) => {
+    if (user.id && senderId) {
+      userMessages.forEach(async (message) => {
+        if (message.sender_id === senderId && !message.seen) {
+          try {
+            const res = await updateSeenMessage(message.id);
+            if (res.status === CREATED) {
+              socket.emit('direct message', user.username);
+            }
+          } catch (err) {
+            console.log(`catch() ${err}`);
+          }
+        }
+      });
     }
   };
-
   return (
     <>
-      <MessagesWrappe>
+      <MessagesWrapper>
         <Accordion flush>
-          {userMessages.map((userMessage, index) => (
-            <Accordion.Item
-              key={userMessage.message.id}
-              eventKey={index.toString()}
-              onClick={() => handleSawMessage(userMessage.message.id)}
-            >
-              <Accordion.Header>
-                <ImgContainer src={userMessage.user.default_picture} />
-                <UserName>
-                  &nbsp;&nbsp;
-                  {`${userMessage.user.firstname} ${userMessage.user.lastname}`}
-                </UserName>
-              </Accordion.Header>
-              <Accordion.Body>
-                <StyledMessage>{userMessage.message.message}</StyledMessage>
-                <ReplayMessageLink
-                  onClick={() =>
-                    handleShowMessageModal(userMessage.message.sender_id)
+          {users.map((user, i) => {
+            return (
+              <Accordion.Item key={user.id?.toString()} eventKey={i.toString()}>
+                <Accordion.Header>
+                  <UserName onClick={() => handleSawMessage(user.id!)}>
+                    <ImgContainer
+                      src={`${process.env.REACT_APP_API_URL}/uploads/${user.default_picture}`}
+                    />
+                    &nbsp;&nbsp; {`${user.firstname} ${user.lastname}`}
+                  </UserName>
+                </Accordion.Header>
+                {userMessages.map((message) => {
+                  if (message.sender_id === user.id) {
+                    return (
+                      <Accordion.Body key={message.id}>
+                        <StyledMessage>
+                          {message.message}
+                          <p>
+                            {formatDistanceToNow(new Date(message.sent_at), {
+                              addSuffix: true,
+                            })}
+                          </p>
+                          <ReplayMessageLink
+                            onClick={() =>
+                              handleShowMessageModal(message.sender_id)
+                            }
+                          >
+                            <a href="#">replay</a>
+                          </ReplayMessageLink>
+                        </StyledMessage>
+                      </Accordion.Body>
+                    );
                   }
-                >
-                  <a href="#">replay</a>
-                </ReplayMessageLink>
-              </Accordion.Body>
-            </Accordion.Item>
-          ))}
+                })}
+              </Accordion.Item>
+            );
+          })}
         </Accordion>
-      </MessagesWrappe>
-      <Modal
-        show={modalShow}
-        size="sm"
-        aria-labelledby="contained-modal-title-vcenter"
-        centered
-        onHide={() => setModalShow(false)}
-        backdrop="static"
-        keyboard={false}
-      >
-        <Modal.Header closeButton>
-          <Modal.Title id="contained-modal-title-vcenter">
-            <MessageUserName>
-              <ImgContainer src={sendTo?.default_picture} alt="send-to" />
-              &nbsp;
-              <span>{`${sendTo?.firstname} ${sendTo?.lastname}`}</span>
-            </MessageUserName>
-          </Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <Form>
-            <Form.Group
-              className="mb-3"
-              controlId="messageControlInput"
-            ></Form.Group>
-            <Form.Group className="mb-3" controlId="messageControlTextarea">
-              <Form.Label className="gray-one">Message</Form.Label>
-              <TextArea>
-                <Form.Control
-                  as="textarea"
-                  rows={11}
-                  maxLength={250}
-                  onChange={(e) => setMessageText(e.target.value)}
-                  style={{ color: '#868e96' }}
-                />
-              </TextArea>
-            </Form.Group>
-          </Form>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button
-            disable={messageText.length < 2 ? 'none' : 'auto'}
-            callBack={handleSendMessage}
-            text="Send Message"
-          />
-        </Modal.Footer>
-      </Modal>
+      </MessagesWrapper>
+      <SendMessage
+        receiver={sendTo}
+        callback={toggleSendMessage}
+        showMessageModal={showModal}
+      />
     </>
   );
 };

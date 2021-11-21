@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import { useRanger } from 'react-ranger';
 import { useAppDispatch, useAppSelector } from 'store/hook';
 import { userInfoUpdated } from 'store/actions';
+import socket from 'socket/socket.io';
 import { UserInterface } from 'interfaces';
 import { updateUserDistancePreferences, getUser } from 'api/user';
 import { CREATED, SUCCESS } from 'utils/const';
@@ -43,6 +44,9 @@ const DistancePreference = () => {
     const distancePreferencesValues = [user.distance_preference];
     setValues(distancePreferencesValues);
     distanceRef.current = user.distance_preference;
+    if (user.distance_preference > 0) {
+      setValues([user.distance_preference]);
+    }
   }, [user]);
 
   useEffect(() => {
@@ -50,8 +54,12 @@ const DistancePreference = () => {
      * Check for the value of 100 is done here because
      * 100 is the default value set when user is created.
      */
-    if (distanceRef.current > 0 && values[0] !== 100) {
-      console.log(`Distance changed ${values[0]} - ${distanceRef.current}`);
+    if (
+      distanceRef.current > 0 &&
+      values[0] !== 0 &&
+      values[0] !== 100 &&
+      values[0] !== user.distance_preference
+    ) {
       (async () => {
         const res = await updateUserDistancePreferences(values[0]);
         if (res.status === CREATED) {
@@ -63,22 +71,16 @@ const DistancePreference = () => {
 
             dispatch(userInfoUpdated(user));
           }
-        } else {
-          console.log(`SOMETHING WENT WRONG ${res.status}`);
+          socket.emit('user updated', user.username);
         }
       })();
     }
-  }, []);
-
-  useEffect(() => {
-    console.log(`changed ${values[0]}`);
   }, [values]);
 
   return (
     <>
       <SliderWrapper>
-        <Title>Distance preference</Title>
-        <Title>km</Title>
+        <Title>Distance preference (km)</Title>
         <FlexSlider>
           <Track {...getTrackProps()}>
             {ticks.map(({ value, getTickProps }) => (

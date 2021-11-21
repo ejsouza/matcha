@@ -1,13 +1,12 @@
-import { render } from 'react-dom';
 import { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { Container, Row, Col, Alert } from 'react-bootstrap';
 import Settings from 'components/Settings';
 import Notifications from 'components/Notifications';
 import Deck from 'components/Deck';
+import Chat from 'components/chat/Chat';
 import { updateUserCoordinates, UpdateUserInfoInterface } from 'api/user';
-import defaultProfilePicture from 'assets/icons/profile-picture-default.svg';
-import briefcase from 'assets/icons/brief_case.svg';
+import ProfileHeaderDesktop from 'components/desktop/ProfileHeaderDesktop';
 
 const SideBar = styled(Col)`
   background-color: #f2f5f9;
@@ -21,38 +20,6 @@ const MainContent = styled(Col)`
   background-color: #f2f5f9;
   height: 125vh;
   border-left: 1px solid #e0e5ec;
-`;
-
-const ProfileHeader = styled(Row)`
-  height: 74px;
-  // width is test and position
-  position: fixed;
-  width: 25.6%;
-  background-color: red; /* For browsers that do not support gradients */
-  background-image: linear-gradient(to right, #fd297b, #ff655b);
-  -webkit-box-shadow: 0px 0px 4px rgba(0, 0, 0, 0.2);
-  box-shadow: 0px 1px 4px rgba(0, 0, 0.5, 0.5);
-  position: -webkit-sticky;
-  top: -1px;
-  //z-index: 3;
-  z-index: 1096;
-`;
-
-const BoxHeader = styled(Col)`
-  display: flex;
-  color: #fff;
-  align-items: flex-start;
-  height: 72px;
-  align-content: space-between;
-  padding: 16px;
-`;
-const BoxHeaderItem = styled(Col)`
-  align-self: center;
-  cursor: pointer;
-`;
-
-const BoxProfileHeaderItem = styled(Col)`
-  align-self: center;
 `;
 
 const HomeDesktop = () => {
@@ -82,7 +49,6 @@ const HomeDesktop = () => {
           x: geo.geoplugin_longitude,
           y: geo.geoplugin_latitude,
         };
-        // updateUserInfo(userGeolocation);
         updateUserCoordinates(userGeolocation);
       });
     };
@@ -122,6 +88,7 @@ const HomeDesktop = () => {
         variant="danger"
         onClose={() => setErrorGeo(false)}
         dismissible
+        className="geo-alert"
       >
         <Alert.Heading>You must allow browser geolocation!</Alert.Heading>
         <p>
@@ -132,34 +99,22 @@ const HomeDesktop = () => {
       <Container fluid>
         <Row>
           <SideBar sm={12} md={3}>
-            <ProfileHeader>
-              <BoxHeader>
-                <BoxHeaderItem md={2}>
-                  <img
-                    alt="profile"
-                    src={defaultProfilePicture}
-                    height="24px"
-                    width="24px"
-                    onClick={handleShowSettings}
-                  />
-                </BoxHeaderItem>
-                <BoxProfileHeaderItem md={9}>My Profile</BoxProfileHeaderItem>
-                <BoxHeaderItem md={1}>
-                  <img
-                    alt="briefcase"
-                    src={briefcase}
-                    height="24px"
-                    width="24px"
-                    onClick={handleshowNotification}
-                  />
-                </BoxHeaderItem>
-              </BoxHeader>
-            </ProfileHeader>
-            {showSettings && <Settings />}
-            {showNotification && <Notifications notif={showNotification} />}
+            <ProfileHeaderDesktop
+              cbSettings={handleShowSettings}
+              cbNotification={handleshowNotification}
+            />
+            {showSettings && <Settings margintop="75px" />}
+            {showNotification && (
+              <Notifications
+                notif={showNotification}
+                topTitle="75px"
+                wrapperpaddingtop="100px"
+              />
+            )}
           </SideBar>
           <MainContent sm={12} md={9}>
             <Deck />
+            <Chat top="0" position="fixed" marginRight="10px" />
           </MainContent>
         </Row>
       </Container>

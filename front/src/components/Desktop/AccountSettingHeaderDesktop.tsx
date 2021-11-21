@@ -3,11 +3,17 @@ import { Row } from 'react-bootstrap';
 
 interface Props {
   cb: () => void;
+  margintop: string;
 }
 
-const Container = styled(Row)`
+interface ContainerProps {
+  margintop: string;
+}
+
+const Container = styled(Row)<ContainerProps>`
   height: 74px;
-  margin-top: 75px;
+  // margin-top: 75px;
+  margin-top: ${(p) => p.margintop};
 `;
 const BoxGrid = styled.div`
   display: grid;
@@ -29,7 +35,7 @@ const BoxItemEnd = styled.div`
 const AccountSettingHeaderDesktop = (props: Props) => {
   return (
     <>
-      <Container>
+      <Container margintop={props.margintop}>
         <BoxGrid>
           <BoxItemStart>ACCOUNT&nbsp;&nbsp;SETTINGS</BoxItemStart>
           <BoxItemEnd onClick={props.cb}>

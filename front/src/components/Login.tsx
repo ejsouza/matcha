@@ -23,10 +23,8 @@ const LoginButton = styled.button`
 `;
 
 const Login = () => {
-  const showLoginCard = useAppSelector((state) => state.showLoginCard);
   const showSignupCard = useAppSelector((state) => state.showSignupCard);
   const dispatch = useAppDispatch();
-  console.log(`testing redux ${showLoginCard} - ${showSignupCard}`);
   const handleClick = () => {
     dispatch(showLoginCardUpdated(true));
   };

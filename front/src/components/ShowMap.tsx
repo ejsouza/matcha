@@ -46,7 +46,6 @@ const ShowMap = () => {
                 getUser().then((res) => {
                   if (res?.status === SUCCESS) {
                     res.json().then((userUpdated: UserInterface) => {
-                      console.log(`HERE COMES THE PRBLEM ${userUpdated}`);
                       dispatch(userInfoUpdated({ ...userUpdated }));
                     });
                   }

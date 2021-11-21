@@ -1,10 +1,9 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Card, FloatingLabel, Form, Alert } from 'react-bootstrap';
 import { StyledButtonWhite } from './Deck';
 import { FlexBox, Gap } from 'globalStyled';
 import styled from 'styled-components';
 import { sendMessage } from 'api/message';
-// import socket from 'helpers/socket/';
 
 const ButtonWarapper = styled.div`
   height: 60px;
@@ -28,7 +27,6 @@ const MessageCard = ({ callBack, sendTo }: IProps) => {
   };
 
   const sendMsg = () => {
-    console.log(`MESSAGE to [${sendTo}] := ${message}`);
     if (!message.length) {
       setAlertMsg('Your message is empty.');
       setVariant('danger');
@@ -44,7 +42,6 @@ const MessageCard = ({ callBack, sendTo }: IProps) => {
         setVariant('danger');
         setShowAlert(true);
       } else {
-        // socket.emit('ping', 'test from client');
         setAlertMsg('Message send successfully!');
         setVariant('success');
         setShowAlert(true);

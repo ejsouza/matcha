@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
-import styled, { createGlobalStyle } from 'styled-components';
+import styled from 'styled-components';
 import { useRanger } from 'react-ranger';
 import { useAppDispatch, useAppSelector } from 'store/hook';
 import { userInfoUpdated } from 'store/actions';
 import { UserInterface } from 'interfaces';
 import { updateUserAgePreferences, getUser } from 'api/user';
 import { CREATED, SUCCESS } from 'utils/const';
+import socket from 'socket/socket.io';
 
 interface HandleProps {
   active: boolean;
@@ -114,13 +115,14 @@ const AgePreferenceSlider = () => {
             const response = await getUser();
             if (response.status === SUCCESS) {
               const user: UserInterface = await response.json();
-              dispatch(userInfoUpdated(user));
               const agePreferencesValuesUpdated: number[] = [
                 user.age_preference_min,
               ];
               agePreferencesValuesUpdated.push(user.age_preference_max);
               setValues(agePreferencesValuesUpdated);
+              dispatch(userInfoUpdated(user));
             }
+            socket.emit('user updated', user.username);
           }
         })();
       }

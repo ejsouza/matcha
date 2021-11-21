@@ -6,14 +6,15 @@ import {
   aHundredLengthBio,
   calculateAge,
   popularity,
-  dateToStringFormat,
   capitalize,
 } from 'utils/user';
 import { reportUser, blockUser } from 'api/user';
 import { getLikesByUserId } from 'api/like';
 import { visitUserProfile } from 'api/visit';
-import { FlexBox, Gap } from 'globalStyled';
+import { FlexBox } from 'globalStyled';
 import { Wrapper } from './LikeButton';
+import { CREATED } from 'utils/const';
+import formatDistanceToNow from 'date-fns/formatDistanceToNow';
 import Button from './Button';
 import styled from 'styled-components';
 import info from 'assets/icons/info.svg';
@@ -25,19 +26,18 @@ import userNameIcon from 'assets/icons/usernameicon.svg';
 import userDescription from 'assets/icons/user-description.svg';
 import tagIcon from 'assets/icons/tag-icon.svg';
 import connected from 'assets/icons/online.svg';
-import { CREATED } from 'utils/const';
 
-const CarouselWrapper = styled.div`
+export const CarouselWrapper = styled.div`
   width: 382px;
   height: 500px;
 `;
 
-const ProfileWrapper = styled.div`
+export const ProfileWrapper = styled.div`
   max-width: 780px;
   margin: auto;
 `;
 
-const ProfileInfo = styled.div`
+export const ProfileInfo = styled.div`
   position: relative;
   width: 382px;
   height: 500px;
@@ -45,7 +45,7 @@ const ProfileInfo = styled.div`
   color: #868e96;
 `;
 
-const StyledTags = styled.span`
+export const StyledTags = styled.span`
   letter-spacing: 0.1em;
 `;
 
@@ -61,7 +61,7 @@ const ButtonBlockWarapper = styled.div`
   bottom: 0;
 `;
 
-const TagsGridContainer = styled.div`
+export const TagsGridContainer = styled.div`
   display: grid;
   grid-template-columns: 10% auto;
 `;
@@ -70,7 +70,7 @@ interface TagsProps {
   marginBottom?: string;
 }
 
-const TagsItem = styled.div<TagsProps>`
+export const TagsItem = styled.div<TagsProps>`
   margin-bottom: ${(p) => (p.marginBottom ? p.marginBottom : '')};
 `;
 
@@ -81,7 +81,7 @@ interface InfoButtonProps {
   currentUserId: number;
 }
 
-interface LikesInterface {
+export interface LikesInterface {
   user_id: number;
   liked_id: number;
 }
@@ -91,7 +91,6 @@ const InfoButton = (props: InfoButtonProps) => {
   const [show, setShow] = useState(false);
   const [userCity, setUserCity] = useState('');
   const [birthDate, setBirthDate] = useState('');
-  const [likedUsers, setLikedUsers] = useState<LikesInterface[]>([]);
   const [likesCurrentUser, setLikesCurrentUser] = useState(false);
 
   useEffect(() => {
@@ -104,7 +103,6 @@ const InfoButton = (props: InfoButtonProps) => {
           );
           if (alreadyLiked) {
             setLikesCurrentUser(true);
-            console.log(`likes := ${likes[0].liked_id} -- ${alreadyLiked}`);
           }
         });
       });
@@ -114,15 +112,11 @@ const InfoButton = (props: InfoButtonProps) => {
   const handleClose = async () => {
     setShow(false);
     setProfile(undefined);
-    console.log('visited profile');
     if (props.user.id) {
       const visited = await visitUserProfile(
         props.user.id,
         props.currentUserId
       );
-      if (visited.status === CREATED) {
-        console.log('Visit added');
-      }
     }
   };
   const handleShow = () => setShow(true);
@@ -181,24 +175,22 @@ const InfoButton = (props: InfoButtonProps) => {
               <FlexBox flexWrap="wrap">
                 <CarouselWrapper>
                   <Carousel>
-                    <Carousel.Item>
-                      {profile?.pictures?.map((picture) => (
-                        <div key={picture.id}>
-                          <img
-                            className="d-block w-100"
-                            src={
-                              picture.path?.startsWith('https')
-                                ? picture.path
-                                : `${process.env.REACT_APP_API_URL}/uploads/${picture.path}`
-                            }
-                            alt="First slide"
-                            width="300"
-                            height="500"
-                          />
-                          <Carousel.Caption></Carousel.Caption>
-                        </div>
-                      ))}
-                    </Carousel.Item>
+                    {profile?.pictures?.map((picture) => (
+                      <Carousel.Item key={picture.id}>
+                        <img
+                          className="d-block w-100"
+                          src={
+                            picture.path?.startsWith('https')
+                              ? picture.path
+                              : `${process.env.REACT_APP_API_URL}/uploads/${picture.path}`
+                          }
+                          alt="First slide"
+                          width="300"
+                          height="500"
+                        />
+                        <Carousel.Caption></Carousel.Caption>
+                      </Carousel.Item>
+                    ))}
                   </Carousel>
                 </CarouselWrapper>
                 <ProfileInfo>
@@ -333,7 +325,9 @@ const InfoButton = (props: InfoButtonProps) => {
                         </TagsItem>
                         <TagsItem>
                           Last seen&nbsp;
-                          {dateToStringFormat(profile.updated_at || '')}
+                          {formatDistanceToNow(new Date(profile.updated_at!), {
+                            addSuffix: true,
+                          })}
                         </TagsItem>
                       </>
                     )}

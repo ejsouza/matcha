@@ -14,7 +14,6 @@ const VisitCard = (props: { visitors: VisitInterface[] }) => {
       for (let i = 0; i < props.visitors.length; i++) {
         const res = await getUserById(props.visitors[i].visitor_id);
         const user: UpdateUserInfoInterface = await res.json();
-        console.log(user.firstname);
         usrs.push(user);
       }
       setUsers(usrs);

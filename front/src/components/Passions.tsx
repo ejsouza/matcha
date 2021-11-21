@@ -1,15 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Row, Col, Modal, Container, Alert } from 'react-bootstrap';
-import { useAppDispatch, useAppSelector } from 'store/hook';
-import { userInfoUpdated } from 'store/actions';
-import { LinkTo, LinkWrapper } from './Desktop/UpdateLink';
-import { UserInterface } from 'interfaces';
-import {
-  getUser,
-  updateUserCoordinates,
-  updateUserInfo,
-  UpdateUserInfoInterface,
-} from 'api/user';
+import { LinkTo, LinkWrapper } from './desktop/UpdateLink';
 import { getTags, getAllAvailableTags, removeTag, addTag } from 'api/tag';
 import { SUCCESS } from 'utils/const';
 import styled from 'styled-components';
@@ -45,13 +36,29 @@ const BoldSpan = styled.span`
 `;
 
 const Passions = () => {
-  const dispatch = useAppDispatch();
-  const user: UserInterface = useAppSelector((state) => state.user);
   const [show, setShow] = useState(false);
   const [showAlert, setShowAlert] = useState(false);
   const [passions, setPassions] = useState<Tags[]>([]);
   const [allTags, setAllTags] = useState<Tags[]>([]);
 
+  useEffect(() => {
+    (async () => {
+      const res = await getTags();
+      if (res.status === SUCCESS) {
+        const json = await res.json();
+        const tags: Tags[] = json.tags;
+        if (!tags.length) {
+          const response = await getAllAvailableTags();
+          if (response.status === SUCCESS) {
+            const json = await response.json();
+            const allTags: Tags[] = json.tags;
+            setAllTags(allTags);
+            setShow(true);
+          }
+        }
+      }
+    })();
+  }, [show]);
   const handleClose = () => setShow(false);
 
   const updateDisplayedTags = async () => {
@@ -75,17 +82,11 @@ const Passions = () => {
     setShow(true);
   };
 
-  const handleSubmit = () => {
-    setShow(false);
-  };
-
   const handleRemoveTag = async (tagId: number) => {
     await removeTag(tagId);
     await updateDisplayedTags();
     if (showAlert) {
       setShowAlert(false);
-    } else {
-      console.log(passions.length, showAlert);
     }
   };
 
@@ -114,6 +115,7 @@ const Passions = () => {
         keyboard={false}
         size="lg"
         className="gray-one"
+        style={{ backgroundColor: '#252932' }}
       >
         <Modal.Header closeButton>
           <Modal.Title as="h5">
@@ -141,8 +143,8 @@ const Passions = () => {
                 Please click on any tag bellow to add tags to your profile
               </h5>
               <p>
-                You need at least one to activate your profile and a maximum of
-                five.
+                You need at least one tag to activate your profile and a maximum
+                of five.
               </p>
             </DisplayTextCenter>
           )}

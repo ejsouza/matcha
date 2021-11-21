@@ -3,7 +3,7 @@ import styled from 'styled-components';
 import { Spinner } from 'react-bootstrap';
 import { UpdateUserInfoInterface } from 'api/user';
 import { ChatInterface } from './Chat';
-import { getUserChats, setChatToSeen, ChatMessageInterface } from 'api/chat';
+import { getUserChats, setChatToSeen } from 'api/chat';
 import { getUserIdFromLocalStorage } from 'utils/user';
 
 interface MatchProfilePros {

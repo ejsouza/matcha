@@ -2,10 +2,12 @@ import { useState, useEffect } from 'react';
 import { Modal, Carousel } from 'react-bootstrap';
 import styled from 'styled-components';
 import Button from './Button';
-import { useAppDispatch, useAppSelector } from 'store/hook';
+import Loading from './Loading';
+import { useAppSelector } from 'store/hook';
 import { UserInterface } from 'interfaces';
 import { getUserAllDetails, UpdateUserInfoInterface } from 'api/user';
 import { visitUserProfile } from 'api/visit';
+import { likeProfile, getLikesByUserId } from 'api/like';
 import {
   ProfileWrapper,
   CarouselWrapper,
@@ -31,10 +33,12 @@ import userNameIcon from 'assets/icons/usernameicon.svg';
 import userDescription from 'assets/icons/user-description.svg';
 import tagIcon from 'assets/icons/tag-icon.svg';
 import connected from 'assets/icons/online.svg';
-import { CREATED } from 'utils/const';
-import SendMessage from './SendMessage';
+import { CREATED, SUCCESS } from 'utils/const';
+import MessageCard from './MessageCard';
 import formatDistanceToNow from 'date-fns/formatDistanceToNow';
 import socket from 'socket/socket.io';
+import { getUserIdFromLocalStorage } from 'utils/user';
+import { getUserLikedBy } from 'api/user';
 
 export const GridContainer = styled.div`
   display: grid;
@@ -76,6 +80,52 @@ const ButtonWarapper = styled.div`
   bottom: 0;
 `;
 
+const RoundedImg = styled.img`
+  border-radius: 50%;
+  width: 150px;
+  height: 150px;
+  object-fit: cover;
+`;
+
+const ButtonWrapper = styled.div`
+  width: 200px;
+  margin: auto;
+`;
+
+export const StyledButtonWhite = styled.button`
+  border: 1px solid #ff655b;
+  width: 200px;
+  border-radius: 20px;
+  padding: 8px 8px;
+  letter-spacing: 0.02em;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+  margin: '3vh 0 0 0';
+  cursor: pointer;
+  color: #fff;
+  background-color: rgba(255, 0, 0, 0);
+  :hover {
+    color: white;
+    background-color: red; /* For browsers that do not support gradients */
+    background-image: linear-gradient(to right, #ff655b, #fd297b);
+  }
+`;
+
+const TitleItsAMatch = styled.div`
+  font-family: 'Bad Script', cursive;
+  font-size: 40px;
+  font-weight: bold;
+  text-align: center;
+  color: #fff;
+`;
+
+const StyledP = styled.p`
+  text-align: center;
+  color: #fff;
+`;
+
 interface MessageInterface {
   id: number;
   sender_id: number;
@@ -110,42 +160,43 @@ const LikesMe = (props: { users: UpdateUserInfoInterface[] }) => {
   const [profile, setProfile] = useState<ProfileInterface>();
   const [show, setShow] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [showMatch, setShowMatch] = useState(false);
+  const [showMessageCard, setShowMessageCard] = useState(false);
   const [likesCurrentUser, setLikesCurrentUser] = useState(false);
   const currentUser: UserInterface = useAppSelector((state) => state.user);
   const [userCity, setUserCity] = useState('');
   const [birthDate, setBirthDate] = useState('');
 
   useEffect(() => {
-    (async () => {
-      const usrs = (await Promise.all(
-        props.users.map((user) => {
-          return new Promise(async (resolve) => {
-            /**
-             * userId could be undefined and getUserAllDetails() expects a number
-             * so we do this trick, in any case we will not find any user with
-             * id 0 so the api will handle id=0 correctly.
-             */
-            const userId = user.id || 0;
-            const res = await getUserAllDetails(userId);
-            const data = await res.json();
-            const usr: ProfileInterface = data.user;
-            console.log(`res >> ${usr.user.firstname}`);
-
-            resolve(usr);
-          });
-        })
-      )) as ProfileInterface[];
-      setProfiles(usrs);
-    })();
+    getLikedCurrentUser(props.users);
   }, []);
+
+  const getLikedCurrentUser = async (users: UpdateUserInfoInterface[]) => {
+    const usrs = (await Promise.all(
+      users.map((user) => {
+        return new Promise(async (resolve) => {
+          /**
+           * userId could be undefined and getUserAllDetails() expects a number
+           * so we do this trick, in any case we will not find any user with
+           * id 0 so the api will handle id=0 correctly.
+           */
+          const userId = user.id || 0;
+          const res = await getUserAllDetails(userId);
+          const data = await res.json();
+          const usr: ProfileInterface = data.user;
+
+          resolve(usr);
+        });
+      })
+    )) as ProfileInterface[];
+    setProfiles(usrs);
+  };
+
   const handleClose = async () => {
     setShow(false);
-    setProfile(undefined);
-    console.log('visited profile');
     if (profile?.user.id) {
       const visited = await visitUserProfile(profile?.user.id, currentUser.id);
       if (visited.status === CREATED) {
-        console.log('Visit added to ', profile.user.username);
         socket.emit('visit', profile.user.username);
       }
     }
@@ -174,17 +225,66 @@ const LikesMe = (props: { users: UpdateUserInfoInterface[] }) => {
     }
   };
 
-  const toggleSendMessage = () => {
-    setShowModal(!showModal);
+  const handleShowMatch = () => {
+    handleClose();
+    setShowMatch(true);
   };
 
-  return (
+  const handleCloseShowMatch = () => {
+    setShowMessageCard(false);
+    setShowMatch(false);
+  };
+
+  const handleCloseSendMessage = () => {
+    setShowMessageCard(true);
+  };
+
+  const handleLikeBack = async () => {
+    if (profile) {
+      const likeRes = await likeProfile(profile.user.id || 0);
+      if (likeRes.status === CREATED) {
+        const currentUserId = getUserIdFromLocalStorage() || 0;
+        const res = await getLikesByUserId(currentUserId);
+        if (res.status === SUCCESS) {
+          const json = await res.json();
+          const likes: LikesInterface[] = json.likes;
+          const isMatch = likes.find(
+            (like) => like.liked_id === profile.user.id
+          );
+          if (isMatch) {
+            handleShowMatch();
+            const res = await getUserLikedBy(currentUserId.toString());
+            const json = await res.json();
+            const usrs: UpdateUserInfoInterface[] = json.users;
+            getLikedCurrentUser(usrs);
+            /**
+             * Here we sent the matched username to be notified.
+             * The current user dosn't need to be notified as s/he
+             * already saw the match.
+             */
+            socket.emit('match', profile.user.username);
+          } else {
+            /**
+             * Emit event to inform currentUser s/he has a like
+             */
+            socket.emit('like', profile.user.username);
+          }
+        }
+      }
+    }
+  };
+
+  return profiles ? (
     <>
       {profiles?.map((profile) => (
         <GridContainer key={profile.user.id}>
           <GridItemPicture>
             <ImgContainer
-              src={profile.user.default_picture}
+              src={
+                profile.user.default_picture?.startsWith('https')
+                  ? profile.user.default_picture
+                  : `${process.env.REACT_APP_API_URL}/uploads/${profile.user.default_picture}`
+              }
               alt="user-picture"
             />
           </GridItemPicture>
@@ -207,7 +307,7 @@ const LikesMe = (props: { users: UpdateUserInfoInterface[] }) => {
         >
           <Modal.Header closeButton>
             <Modal.Title className="gray-one">
-              {profile.user.firstname}'s profile
+              {profile.user.username}'s profile
             </Modal.Title>
           </Modal.Header>
           <Modal.Body>
@@ -439,16 +539,9 @@ const LikesMe = (props: { users: UpdateUserInfoInterface[] }) => {
                     </TagsItem>
                     {/************  end tags ************/}
                   </TagsGridContainer>
-                  {/* <ButtonWarapper>
-                    <Button text="Send message" callBack={toggleSendMessage} />
-                  </ButtonWarapper>
-                  <SendMessage
-                    receiver={profile.user}
-                    callback={toggleSendMessage}
-                    showMessageModal={showModal}
-                  /> */}
+                  x{' '}
                   <ButtonWarapper>
-                    <Button text="Like back" />
+                    <Button text="Like back" callBack={handleLikeBack} />
                     <Button text="Not my type" />
                   </ButtonWarapper>
                 </ProfileInfo>
@@ -457,7 +550,55 @@ const LikesMe = (props: { users: UpdateUserInfoInterface[] }) => {
           </Modal.Body>
         </Modal>
       )}
+      {/* Show match modal */}
+      <Modal
+        show={showMatch}
+        backdrop="static"
+        keyboard={false}
+        className="modal-background-white"
+      >
+        <Modal.Body className="modal-background-dark">
+          <TitleItsAMatch>It's a Match!</TitleItsAMatch>
+          <StyledP>
+            You and {profile?.user.firstname} have liked each other.
+          </StyledP>
+          <FlexBox alignItems="center" justifyContent="center">
+            <RoundedImg
+              src={`${process.env.REACT_APP_API_URL}/uploads/${currentUser.default_picture}`}
+              alt="avatarOne"
+            />
+            <Gap>&nbsp;&nbsp;&nbsp;</Gap>
+            <RoundedImg
+              src={
+                profile?.user.default_picture?.startsWith('https')
+                  ? profile?.user.default_picture
+                  : `${process.env.REACT_APP_API_URL}/uploads/${profile?.user.default_picture}`
+              }
+              alt="avatarTwo"
+            />
+          </FlexBox>
+          {!showMessageCard && (
+            <>
+              <ButtonWrapper onClick={handleCloseSendMessage}>
+                <Button text="Send Message" wid="200px" borderRadius="20px" />
+              </ButtonWrapper>
+              <Gap>&nbsp;</Gap>
+              <ButtonWrapper onClick={handleCloseShowMatch}>
+                <StyledButtonWhite>Keep Swiping</StyledButtonWhite>
+              </ButtonWrapper>
+            </>
+          )}
+        </Modal.Body>
+        {showMessageCard && (
+          <MessageCard
+            callBack={handleCloseShowMatch}
+            sendTo={profile?.user.id}
+          />
+        )}
+      </Modal>
     </>
+  ) : (
+    <Loading />
   );
 };
 

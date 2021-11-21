@@ -41,10 +41,16 @@ interface MessageWrapperInterface {
   backgroundColor: string;
 }
 
-const ButtonWrapper = styled.div`
-  position: fixed;
-  top: 0;
-  right: 10px;
+interface ButtonProps {
+  top: string;
+  position: string;
+  marginRight: string;
+}
+
+const ButtonWrapper = styled.div<ButtonProps>`
+  position: ${(p) => p.position};
+  top: ${(p) => p.top};
+  right: ${(p) => p.marginRight};
 `;
 
 const MessageNotification = styled.div`
@@ -164,7 +170,7 @@ const SelectUserToChatMessage = styled.div`
   }
 `;
 
-const Chat = () => {
+const Chat = (props: ButtonProps) => {
   const [show, setShow] = useState(false);
   const [users, setUsers] = useState<UpdateUserInfoInterface[]>();
   const [chatWithUser, setChatWithUser] = useState<UpdateUserInfoInterface>();
@@ -320,7 +326,11 @@ const Chat = () => {
 
   return (
     <>
-      <ButtonWrapper>
+      <ButtonWrapper
+        top={props.top}
+        position={props.position}
+        marginRight={props.marginRight}
+      >
         {!show && globalMessageNotificationCount > 0 && (
           <MessageNotification>
             <span>{globalMessageNotificationCount}</span>

@@ -1,15 +1,19 @@
 import { useEffect, useState } from 'react';
 import { Modal, Carousel, Alert } from 'react-bootstrap';
 import styled from 'styled-components';
-import UpdateLink from './Desktop/UpdateLink';
+import UpdateLink from './desktop/UpdateLink';
 import Button from './Button';
-import { uploadPicture, getPictures, deletePicture } from 'api/picture';
-import { getUser } from 'api/user';
+import * as picture from 'api/picture';
+import { getUser, updateUserInfo, UpdateUserInfoInterface } from 'api/user';
 import { useAppDispatch, useAppSelector } from 'store/hook';
-import { isLoggedUpdated, userInfoUpdated } from 'store/actions';
+import { userInfoUpdated } from 'store/actions';
 import { UserInterface } from 'interfaces';
 import { FlexBox, Gap } from 'globalStyled';
 import { API_BASE_URL } from 'utils/config';
+import setToDefaultPictureSVG from '../assets/icons/conversion-settings.svg';
+import defaultPictureSVG from '../assets/icons/default.svg';
+import closeCrossSVG from '../assets/icons/closeCross.svg';
+import { CREATED, SUCCESS } from 'utils/const';
 
 const ImgPreview = styled.img`
   width: 200px;
@@ -19,7 +23,7 @@ const ImgPreview = styled.img`
 
 const ImgWrapper = styled.div`
   width: 200px;
-  height: 300px;
+  height: 350px;
   margin: auto;
 `;
 
@@ -36,11 +40,23 @@ const Delete = styled.div`
   cursor: pointer;
 `;
 
+const SetAsDefault = styled.div`
+  position: relative;
+  top: 18%;
+  left: 2%;
+  cursor: pointer;
+`;
+
 const DeleteFromGallery = styled.div`
   position: relative;
-  top: 10%;
+  top: 9%;
   left: 85%;
   cursor: pointer;
+`;
+
+const NoPictureMessage = styled.div`
+  color: red;
+  text-align: center;
 `;
 
 interface PicturesInterface {
@@ -50,6 +66,7 @@ interface PicturesInterface {
 }
 const Pictures = () => {
   const dispatch = useAppDispatch();
+  const user: UserInterface = useAppSelector((state) => state.user);
   const [show, setShow] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | undefined>();
@@ -68,31 +85,38 @@ const Pictures = () => {
     const objectURL = URL.createObjectURL(selectedFile);
     setPreview(objectURL);
 
-    console.log(objectURL);
     // free memory othewise we get memory leak
     return () => URL.revokeObjectURL(objectURL);
   }, [selectedFile]);
 
-  const getGallery = () => {
-    getPictures()
-      .then((res) => {
-        if (!res || !res.ok) {
-          console.log(`something went worong getting user pictures`);
-          return;
-        }
-        res.json().then((user) => {
-          const pictures: PicturesInterface[] = user.pictures;
-          pictures.forEach((picture) => console.log(picture.file_path));
-
-          setPictures(pictures);
-        });
-      })
-      .catch((err) => {
-        console.log(`Error getting user pictures := ${err}`);
-      });
-  };
   useEffect(() => {
-    console.log(`getting pictues`);
+    if (user.id && !user.default_picture) {
+      setShow(true);
+    }
+  }, [user, show]);
+
+  const getGallery = async () => {
+    const res = await picture.get();
+
+    if (res.status === SUCCESS) {
+      const json = await res.json();
+      const pictures: PicturesInterface[] = json.pictures;
+      setPictures(pictures);
+      if (!pictures.length && user.default_picture) {
+        let usr: UpdateUserInfoInterface = {};
+        usr.default_picture = '';
+        const response = await updateUserInfo(usr);
+        if (response.status === CREATED) {
+          const userJson = await response.json();
+          const userData: UserInterface = userJson.user;
+
+          dispatch(userInfoUpdated({ ...userData }));
+        }
+      }
+    }
+  };
+
+  useEffect(() => {
     getGallery();
   }, [updateCarousel]);
 
@@ -129,11 +153,10 @@ const Pictures = () => {
   };
 
   const deletePictureFromGallery = (id: number) => {
-    console.log(`removing picture with id ${id}`);
-    deletePicture(id)
+    picture
+      .remove(id)
       .then((res) => {
         if (!res || !res.ok) {
-          console.log(`something went worong deleting picture`);
           return;
         }
         getGallery();
@@ -151,7 +174,8 @@ const Pictures = () => {
 
   const uploadPictureToApi = () => {
     if (selectedFile) {
-      uploadPicture(selectedFile)
+      picture
+        .upload(selectedFile)
         ?.then((res) => {
           if (!res?.ok) {
             setVariant('danger');
@@ -196,6 +220,31 @@ const Pictures = () => {
         });
     }
   };
+
+  const handleSetPictureToDefault = async (path: string) => {
+    /**
+     * If user clicks on the already default picture just return;
+     */
+    if (!path || path === user.default_picture) {
+      return;
+    }
+    const res = await picture.setDefault(path);
+    if (res.status === CREATED) {
+      const response = await getUser();
+      if (response.status === SUCCESS) {
+        const usr: UserInterface = await response.json();
+        dispatch(userInfoUpdated({ ...usr }));
+        setVariant('success');
+        setAlertMsg('Default picture updated');
+        setShowAlert(true);
+        setTimeout(() => {
+          setShowAlert(false);
+          setVariant('');
+        }, 2000);
+      }
+    }
+  };
+
   return (
     <>
       <UpdateLink title="Pictures" symbol=">" link="#" setEvent={handleShow} />
@@ -211,6 +260,12 @@ const Pictures = () => {
         </Modal.Header>
         {show && (
           <Modal.Body>
+            {!user.default_picture && (
+              <NoPictureMessage>
+                <p>You don't have any picture yet!</p>
+                <p> You need at least one to use the app!</p>
+              </NoPictureMessage>
+            )}
             <Carousel>
               {pictures.map((picture) => {
                 const path = `${API_BASE_URL}/uploads/${picture.file_path}`;
@@ -265,65 +320,28 @@ const Pictures = () => {
                   const path = `${API_BASE_URL}/uploads/${picture.file_path}`;
                   return (
                     <ImgWrapper key={picture.id}>
+                      <SetAsDefault
+                        onClick={() =>
+                          handleSetPictureToDefault(picture.file_path)
+                        }
+                      >
+                        {picture.file_path === user.default_picture ? (
+                          <img
+                            src={defaultPictureSVG}
+                            alt="default-pic-svg"
+                            style={{ cursor: 'default' }}
+                          />
+                        ) : (
+                          <img
+                            src={setToDefaultPictureSVG}
+                            alt="set-default-pic-svg"
+                          />
+                        )}
+                      </SetAsDefault>
                       <DeleteFromGallery
                         onClick={() => deletePictureFromGallery(picture.id)}
                       >
-                        <svg
-                          width="24"
-                          height="24"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <g id="closeCross">
-                            <g id="mainCrossIcon">
-                              <path
-                                id="forwardVector"
-                                d="M1.55543 24C1.15739 24 0.759067 23.8477 0.456123 23.5444C-0.152041 22.9365 -0.152041 21.9537 0.456123 21.3458L21.3453 0.455919C21.9531 -0.151973 22.936 -0.151973 23.5439 0.455919C24.152 1.06381 24.152 2.04669 23.5439 2.65458L2.65474 23.5444C2.3498 23.8491 1.95347 24 1.55543 24Z"
-                                fill="url(#paint0_linear)"
-                              />
-                              <path
-                                id="backwardVector"
-                                d="M22.4446 24C22.0465 24 21.6485 23.8477 21.3453 23.5444L0.456123 2.65458C-0.152041 2.04669 -0.152041 1.06381 0.456123 0.455919C1.064 -0.151973 2.04658 -0.151973 2.65474 0.455919L23.5439 21.3458C24.152 21.9537 24.152 22.9365 23.5439 23.5444C23.2406 23.8491 22.8426 24 22.4446 24V24Z"
-                                fill="url(#paint1_linear)"
-                              />
-                            </g>
-                          </g>
-                          <defs>
-                            <linearGradient
-                              id="paint0_linear"
-                              x1="12"
-                              y1="0"
-                              x2="12"
-                              y2="24"
-                              gradientUnits="userSpaceOnUse"
-                            >
-                              <stop stopColor="#F44336" stopOpacity="0.6" />
-                              <stop offset="0.505208" stopColor="#F44336" />
-                              <stop
-                                offset="0.963542"
-                                stopColor="#FF655B"
-                                stopOpacity="0.67"
-                              />
-                            </linearGradient>
-                            <linearGradient
-                              id="paint1_linear"
-                              x1="12"
-                              y1="0"
-                              x2="12"
-                              y2="24"
-                              gradientUnits="userSpaceOnUse"
-                            >
-                              <stop stopColor="#F44336" stopOpacity="0.6" />
-                              <stop offset="0.505208" stopColor="#F44336" />
-                              <stop
-                                offset="0.963542"
-                                stopColor="#FF655B"
-                                stopOpacity="0.67"
-                              />
-                            </linearGradient>
-                          </defs>
-                        </svg>
+                        <img src={closeCrossSVG} alt="close-cross-svg" />
                       </DeleteFromGallery>
                       <ImgPreview src={path} width="120" height="80" />
                     </ImgWrapper>
@@ -353,65 +371,11 @@ const Pictures = () => {
                 </label>
               </>
             )}
+
             {selectedFile && (
               <ImgWrapper>
                 <Delete onClick={removePreview}>
-                  <svg
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <g id="closeCross">
-                      <g id="mainCrossIcon">
-                        <path
-                          id="forwardVector"
-                          d="M1.55543 24C1.15739 24 0.759067 23.8477 0.456123 23.5444C-0.152041 22.9365 -0.152041 21.9537 0.456123 21.3458L21.3453 0.455919C21.9531 -0.151973 22.936 -0.151973 23.5439 0.455919C24.152 1.06381 24.152 2.04669 23.5439 2.65458L2.65474 23.5444C2.3498 23.8491 1.95347 24 1.55543 24Z"
-                          fill="url(#paint0_linear)"
-                        />
-                        <path
-                          id="backwardVector"
-                          d="M22.4446 24C22.0465 24 21.6485 23.8477 21.3453 23.5444L0.456123 2.65458C-0.152041 2.04669 -0.152041 1.06381 0.456123 0.455919C1.064 -0.151973 2.04658 -0.151973 2.65474 0.455919L23.5439 21.3458C24.152 21.9537 24.152 22.9365 23.5439 23.5444C23.2406 23.8491 22.8426 24 22.4446 24V24Z"
-                          fill="url(#paint1_linear)"
-                        />
-                      </g>
-                    </g>
-                    <defs>
-                      <linearGradient
-                        id="paint0_linear"
-                        x1="12"
-                        y1="0"
-                        x2="12"
-                        y2="24"
-                        gradientUnits="userSpaceOnUse"
-                      >
-                        <stop stopColor="#F44336" stopOpacity="0.6" />
-                        <stop offset="0.505208" stopColor="#F44336" />
-                        <stop
-                          offset="0.963542"
-                          stopColor="#FF655B"
-                          stopOpacity="0.67"
-                        />
-                      </linearGradient>
-                      <linearGradient
-                        id="paint1_linear"
-                        x1="12"
-                        y1="0"
-                        x2="12"
-                        y2="24"
-                        gradientUnits="userSpaceOnUse"
-                      >
-                        <stop stopColor="#F44336" stopOpacity="0.6" />
-                        <stop offset="0.505208" stopColor="#F44336" />
-                        <stop
-                          offset="0.963542"
-                          stopColor="#FF655B"
-                          stopOpacity="0.67"
-                        />
-                      </linearGradient>
-                    </defs>
-                  </svg>
+                  <img src={closeCrossSVG} alt="close-cross-svg" />
                 </Delete>
                 <ImgPreview
                   src={preview}
