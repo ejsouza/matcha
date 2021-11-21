@@ -64,9 +64,6 @@ const getUserCity = async (location: UserLocation) => {
   );
 
   const userGeoData = await userGeolocation.json();
-  console.log(`THE USER CITY IS  := ${userGeoData.locality}`);
-  // setCity(userGeoData.locality);
-  // setCountry(userGeoData.countryName);
 
   const city = userGeoData?.locality || '';
   return city;
@@ -114,15 +111,6 @@ const popularity = (score: number | undefined) => {
   }
 };
 
-const dateToStringFormat = (date: string) => {
-  if (!date) {
-    const today = new Date();
-    today.setMinutes(today.getMinutes() - Math.floor(Math.random() * 10));
-    return new Date(today).toLocaleString();
-  } else {
-    return new Date(date).toLocaleString();
-  }
-};
 
 const capitalize = (word: string) => {
   if (!word) {

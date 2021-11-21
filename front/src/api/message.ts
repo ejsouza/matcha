@@ -1,7 +1,10 @@
 import { API_BASE_URL } from 'utils/config';
-import { getUserTokenFromLocalStorage } from 'utils/user';
+import {
+  getUserTokenFromLocalStorage,
+  getUserIdFromLocalStorage,
+} from 'utils/user';
 
-const sendMessage = async (message: string, id: string) => {
+const sendMessage = async (receiver_id: string, message: string) => {
   return fetch(`${API_BASE_URL}/messages`, {
     method: 'POST',
     mode: 'cors',
@@ -10,14 +13,12 @@ const sendMessage = async (message: string, id: string) => {
       Authorization: `Bearer ${getUserTokenFromLocalStorage()}`,
     },
     body: JSON.stringify({
-      to_user_id: id,
-      content: message,
+      sender_id: getUserIdFromLocalStorage(),
+      receiver_id,
+      message,
     }),
   })
     .then((res) => {
-      if (!res.ok) {
-        throw new Error(res.statusText);
-      }
       return res;
     })
     .catch((err) => {
@@ -26,25 +27,38 @@ const sendMessage = async (message: string, id: string) => {
     });
 };
 
-const getMessage = async () => {
-  return fetch(`${API_BASE_URL}/messages`, {
-    method: 'GET',
-    mode: 'cors',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `${getUserTokenFromLocalStorage()}`,
-    },
-  })
-    .then((res) => {
-      if (!res.ok) {
-        throw new Error(res.statusText);
-      }
-      return res;
-    })
-    .catch((err) => {
-      console.log(`[catch error getMessage()] ${err}`);
-      throw err;
+const getMessages = async () => {
+  try {
+    const res = await fetch(`${API_BASE_URL}/messages`, {
+      method: 'GET',
+      mode: 'cors',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${getUserTokenFromLocalStorage()}`,
+      },
     });
+    return res;
+  } catch (err) {
+    console.log(`[catch error getMessages()] ${err}`);
+    throw err;
+  }
 };
 
-export { sendMessage, getMessage };
+const updateSeenMessage = async (messageId: number) => {
+  try {
+    const res = await fetch(`${API_BASE_URL}/messages/${messageId}`, {
+      method: 'PATCH',
+      mode: 'cors',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${getUserTokenFromLocalStorage()}`,
+      },
+    });
+    return res;
+  } catch (err) {
+    console.log(`[catch error updateSeenMessage()] ${err}`);
+    throw err;
+  }
+};
+
+export { sendMessage, getMessages, updateSeenMessage };

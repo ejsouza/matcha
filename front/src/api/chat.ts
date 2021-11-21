@@ -35,10 +35,6 @@ const postMessage = async (resource: ChatMessageInterface) => {
       },
       body: JSON.stringify(resource),
     });
-    if (!res.ok) {
-      console.log(`what here ${res.status}`);
-      throw new Error(res.statusText);
-    }
     return res;
   } catch (err) {
     console.log(`[catch error postMessage()] ${err}`);
@@ -46,4 +42,20 @@ const postMessage = async (resource: ChatMessageInterface) => {
   }
 };
 
-export { getUserChats, postMessage };
+const setChatToSeen = async (chatId: number) => {
+  try {
+    const res = await fetch(`${API_BASE_URL}/chat/${chatId}`, {
+      method: 'PATCH',
+      mode: 'cors',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${getUserTokenFromLocalStorage()}`,
+      },
+    });
+    return res;
+  } catch (err) {
+    console.log(`Something went wrong setting chat to seen!`);
+  }
+};
+
+export { getUserChats, postMessage, setChatToSeen };

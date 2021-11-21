@@ -84,7 +84,6 @@ const updateIsDesktop = (isDesktop: boolean) => {
 };
 
 const updateUserInfo = (user: UserInterface) => {
-  console.log(`Store[update user] ${user}`);
   return <const>{
     type: USER_INFO_UPDATED,
     user,

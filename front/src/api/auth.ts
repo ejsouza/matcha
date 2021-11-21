@@ -24,7 +24,6 @@ const login = async (username: string, password: string) => {
 
 const signup = async (user: UserInterface) => {
   try {
-    console.log(`calling ... := ${API_BASE_URL}/users`);
     const res = await fetch(`${API_BASE_URL}/users`, {
       method: 'POST',
       mode: 'cors',
@@ -39,7 +38,6 @@ const signup = async (user: UserInterface) => {
         lastname: user.lastName,
       }),
     });
-    console.log(`try(${res.status})`);
     return res;
   } catch (err) {
     console.log(`catch(${err})`);

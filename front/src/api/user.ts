@@ -1,4 +1,3 @@
-import { get } from 'http';
 import { API_BASE_URL } from 'utils/config';
 import {
   getUserTokenFromLocalStorage,
@@ -37,11 +36,15 @@ export interface UpdateUserInfoInterface {
     id?: number;
     path?: string;
   }[];
-  age?: number;
   default_picture?: string;
   popularity?: number;
   is_connected?: number;
   updated_at?: string;
+  reported?: boolean;
+  distance_preference?: number;
+  age_preference_min?: number;
+  age_preference_max?: number;
+  rate?: number;
 }
 
 const updateUserInfo = async (user: UpdateUserInfoInterface) => {
@@ -106,6 +109,23 @@ const getUser = async () => {
   }
 };
 
+const getUserAllDetails = async (userId: number) => {
+  try {
+    const res = await fetch(`${API_BASE_URL}/users/${userId}/all-details`, {
+      method: 'GET',
+      mode: 'cors',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${getUserTokenFromLocalStorage()}`,
+      },
+    });
+    return res;
+  } catch (err) {
+    console.log(`[catch error getUser()] ${err}`);
+    throw err;
+  }
+};
+
 const getUserById = async (id: number) => {
   try {
     const res = await fetch(`${API_BASE_URL}/users/${id}`, {
@@ -160,6 +180,23 @@ const getUsers = async () => {
   }
 };
 
+const getUserLikedBy = async (userId: string) => {
+  try {
+    const res = await fetch(`${API_BASE_URL}/users/${userId}/liked-by`, {
+      method: 'GET',
+      mode: 'cors',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${getUserTokenFromLocalStorage()}`,
+      },
+    });
+    return res;
+  } catch (err) {
+    console.log(`[catch error getLikedBy()] ${err}`);
+    throw err;
+  }
+};
+
 const reportUser = async (reportedId: number) => {
   try {
     const res = await fetch(`${API_BASE_URL}/report`, {
@@ -202,13 +239,63 @@ const blockUser = async (blockedId: number) => {
   }
 };
 
+const updateUserAgePreferences = async (min: number, max: number) => {
+  try {
+    const userId = getUserIdFromLocalStorage() || 0;
+    const res = await fetch(`${API_BASE_URL}/users/${userId}/age-preferences`, {
+      method: 'PATCH',
+      mode: 'cors',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${getUserTokenFromLocalStorage()}`,
+      },
+      body: JSON.stringify({
+        min,
+        max,
+      }),
+    });
+    return res;
+  } catch (err) {
+    console.log(`[catch error updateUserAgePreferences()] ${err}`);
+    throw err;
+  }
+};
+
+const updateUserDistancePreferences = async (distance: number) => {
+  try {
+    const userId = getUserIdFromLocalStorage() || 0;
+    const res = await fetch(
+      `${API_BASE_URL}/users/${userId}/distance-preferences`,
+      {
+        method: 'PATCH',
+        mode: 'cors',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${getUserTokenFromLocalStorage()}`,
+        },
+        body: JSON.stringify({
+          distance,
+        }),
+      }
+    );
+    return res;
+  } catch (err) {
+    console.log(`[catch error updateUserDistancePreferences()] ${err}`);
+    throw err;
+  }
+};
+
 export {
   getUser,
   getUserById,
   getUsers,
+  getUserAllDetails,
   getUserMatches,
+  getUserLikedBy,
   updateUserInfo,
   updateUserCoordinates,
   reportUser,
   blockUser,
+  updateUserAgePreferences,
+  updateUserDistancePreferences,
 };

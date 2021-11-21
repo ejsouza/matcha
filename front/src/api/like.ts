@@ -1,5 +1,4 @@
 import { API_BASE_URL } from 'utils/config';
-import { LOGGED_USER } from 'utils/const';
 import {
   getUserTokenFromLocalStorage,
   getUserIdFromLocalStorage,
@@ -84,5 +83,45 @@ const getLikesByUserId = async (userId: number) => {
   }
 };
 
+const getLikesLikedBy = async (userId: number) => {
+  try {
+    const res = await fetch(`${API_BASE_URL}/likes/${userId}/liked-by`, {
+      method: 'GET',
+      mode: 'cors',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${getUserTokenFromLocalStorage()}`,
+      },
+    });
+    return res;
+  } catch (err) {
+    console.log(`[catch error getLikedBy()] ${err}`);
+    throw err;
+  }
+};
 
-export { likeProfile, dislikeProfile, getAllLikes, getLikesByUserId };
+const setLikeToSeen = async (id: number) => {
+  try {
+    const res = await fetch(`${API_BASE_URL}/likes/${id}/seen`, {
+      method: 'PATCH',
+      mode: 'cors',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${getUserTokenFromLocalStorage()}`,
+      },
+    });
+    return res;
+  } catch (err) {
+    console.log(`[catch error setLikeToSeen()] ${err}`);
+    throw err;
+  }
+};
+
+export {
+  likeProfile,
+  dislikeProfile,
+  getAllLikes,
+  getLikesByUserId,
+  getLikesLikedBy,
+  setLikeToSeen,
+};

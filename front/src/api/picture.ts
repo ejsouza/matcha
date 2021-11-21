@@ -3,7 +3,7 @@ import { USER_TOKEN } from 'utils/const';
 import { getUserTokenFromLocalStorage } from 'utils/user';
 import { UpdateUserInfoInterface } from './user';
 
-const uploadPicture = async (file: File) => {
+const upload = async (file: File) => {
   let formData = new FormData();
   formData.append('uploaded_file', file);
 
@@ -15,9 +15,6 @@ const uploadPicture = async (file: File) => {
     body: formData,
   })
     .then((res) => {
-      if (!res.ok) {
-        throw new Error(res.statusText);
-      }
       return res;
     })
     .catch((err) => {
@@ -26,7 +23,7 @@ const uploadPicture = async (file: File) => {
     });
 };
 
-const getPictures = async () => {
+const get = async () => {
   return fetch(`${API_BASE_URL}/photos`, {
     method: 'GET',
     mode: 'cors',
@@ -47,7 +44,7 @@ const getPictures = async () => {
     });
 };
 
-const deletePicture = async (id: number) => {
+const remove = async (id: number) => {
   return fetch(`${API_BASE_URL}/photos/${id}`, {
     method: 'DELETE',
     mode: 'cors',
@@ -57,9 +54,6 @@ const deletePicture = async (id: number) => {
     },
   })
     .then((res) => {
-      if (!res.ok) {
-        throw new Error(res.statusText);
-      }
       return res;
     })
     .catch((err) => {
@@ -68,4 +62,22 @@ const deletePicture = async (id: number) => {
     });
 };
 
-export { uploadPicture, getPictures, deletePicture };
+const setDefault = async (path: string) => {
+  try {
+    const res = await fetch(`${API_BASE_URL}/photos`, {
+      method: 'PATCH',
+      mode: 'cors',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${getUserTokenFromLocalStorage()}`,
+      },
+      body: JSON.stringify({ file_path: path }),
+    });
+    return res;
+  } catch (err) {
+    console.log(`[catch error setAsDefaultPicture()] ${err}`);
+    throw err;
+  }
+};
+
+export { upload, get, remove, setDefault };
