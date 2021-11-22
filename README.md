@@ -1,5 +1,6 @@
 # Matcha
-
+This project is about creating a dating website.<br>
+We  create an app allowing two potential lovers to meet, from the registration to the final encounter.
 ### How to build:
   Clone the project<br>
   cd in the new cloned repository<br>
